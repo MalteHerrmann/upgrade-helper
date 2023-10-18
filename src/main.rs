@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::process;
 
 use inquire::Select;
@@ -18,38 +19,48 @@ trait UpgradeHelper {
 
 struct MyUpgradeHelper {
     network: Network,
+    target_version: String,
 }
 
 impl UpgradeHelper for MyUpgradeHelper {
     const DEFAULT_HOME: &'static str = "/path/to/default/home";
 
+    /// Returns a boolean value if the defined target version fits 
+    /// the requirements for the selected network type.
+    /// The target version must be in the format `vX.Y.Z`.
+    /// Testnet upgrades must use a release candidate with the suffix `-rcX`. 
     fn check_target_version(&self) {
+        let re: Regex;
+
         match self.network {
             Network::LocalNode => {
-                println!("Checking target version for LOCAL_NODE");
-                // Check target version logic for LOCAL_NODE
+                re = Regex::new(r"v\d+\.\d{1}\.\d+(-rc\d+)*").unwrap();
             },
             Network::Testnet => {
-                println!("Checking target version for TESTNET");
-                // Check target version logic for TESTNET
+                re = Regex::new(r"v\d+\.\d{1}\.\d+-rc\d+").unwrap();
             },
             Network::Mainnet => {
-                println!("Checking target version for MAINNET");
-                // Check target version logic for MAINNET
+                re = Regex::new(r"v\d+\.\d{1}\.\d+").unwrap();
             },
+        }
+
+        let valid_version = re.is_match(&self.target_version);
+        if !valid_version {
+            println!("Invalid target version: {}", self.target_version);
+            process::exit(1);
         }
     }
 }
 
-fn main() {
+/// Prompts the user to select the network type used.
+fn get_used_network() -> Network {
+    let used_network: Network;
+
     let network_options = vec![
         "Local Node",
         "Testnet",
         "Mainnet",
     ];
-
-    // Initialize the network variable
-    let used_network: Network;
 
     // Prompt the user to select the network
     let chosen_network = Select::new("Select network", network_options).prompt();
@@ -71,9 +82,34 @@ fn main() {
         }
     }
 
+    used_network
+}
+
+fn main() {
+    // Initialize the network variable
+    let used_network = get_used_network();
+
+    let target_version: String;
+    // Prompt the user to input the desired target version
+    let chosen_target_version = inquire::Text::new("Target version to upgrade to:")
+        .prompt();
+    match chosen_target_version {
+        Ok(version) => {
+            println!("Target version: {}", version);
+            // Initialize the target version variable
+            target_version = version;
+        }
+        Err(e) => { 
+            println!("Error selecting target version: {}", e); 
+            process::exit(1);
+        }
+    }
+
+
     // Create an instance of the helper
     let helper = MyUpgradeHelper {
         network: used_network,
+        target_version: target_version,
     };
 
     // Check the target version
@@ -85,25 +121,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_check_target_version_local_node() {
-        let network = Network::LocalNode;
-        let helper = MyUpgradeHelper {network};
+    fn test_check_target_version_local_node_correct_version() {
+        let helper = MyUpgradeHelper { 
+            network: Network::LocalNode, 
+            target_version: "v14.0.0".to_string() ,
+        };
         helper.check_target_version();
         // Add assertions to validate the behavior for LOCAL_NODE
     }
 
     #[test]
     fn test_check_target_version_testnet() {
-        let network = Network::Testnet;
-        let helper = MyUpgradeHelper {network};
+        let helper = MyUpgradeHelper {
+            network: Network::LocalNode,
+            target_version: "v14,0.0".to_string()
+        };
         helper.check_target_version();
         // Add assertions to validate the behavior for TESTNET
     }
 
     #[test]
     fn test_check_target_version_mainnet() {
-        let network = Network::Mainnet;
-        let helper = MyUpgradeHelper {network};
+        let helper = MyUpgradeHelper {
+            network: Network::Mainnet,
+            target_version: "v14,0.0".to_string(),
+        };
         helper.check_target_version();
         // Add assertions to validate the behavior for MAINNET
     }
