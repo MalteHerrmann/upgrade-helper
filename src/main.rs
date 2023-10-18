@@ -1,5 +1,3 @@
-use std::process::Command;
-
 // Enum to represent different network options
 #[derive(Debug)]
 enum Network {
@@ -11,27 +9,13 @@ enum Network {
 // Trait to define the interface
 trait UpgradeHelper {
     const DEFAULT_HOME: &'static str;
-    fn prepare_submit_proposal_cmd(&self);
     fn check_target_version(&self, network: &Network);
 }
 
-struct MyUpgradeHelper {
-    target_version: String,
-}
+struct MyUpgradeHelper {}
 
 impl UpgradeHelper for MyUpgradeHelper {
     const DEFAULT_HOME: &'static str = "/path/to/default/home";
-
-    fn prepare_submit_proposal_cmd(&self) {
-        let cmd = "evmosd tx gov submit-legacy-proposal";
-        println!("Executing command: {}", cmd);
-        // Execute the command in a shell process
-        let _result = Command::new("sh")
-            .arg("-c")
-            .arg(cmd)
-            .status()
-            .expect("Failed to execute command");
-    }
 
     fn check_target_version(&self, network: &Network) {
         match network {
@@ -52,11 +36,7 @@ impl UpgradeHelper for MyUpgradeHelper {
 }
 
 fn main() {
-    let helper = MyUpgradeHelper {
-        target_version: String::from("some_target_version"),
-    };
-
-    helper.prepare_submit_proposal_cmd();
+    let helper = MyUpgradeHelper {};
 
     let network = Network::Testnet;
     helper.check_target_version(&network);
@@ -68,9 +48,7 @@ mod tests {
 
     #[test]
     fn test_check_target_version_local_node() {
-        let helper = MyUpgradeHelper {
-            target_version: String::from("some_target_version"),
-        };
+        let helper = MyUpgradeHelper {};
         let network = Network::LocalNode;
         helper.check_target_version(&network);
         // Add assertions to validate the behavior for LOCAL_NODE
@@ -78,9 +56,7 @@ mod tests {
 
     #[test]
     fn test_check_target_version_testnet() {
-        let helper = MyUpgradeHelper {
-            target_version: String::from("some_target_version"),
-        };
+        let helper = MyUpgradeHelper {};
         let network = Network::Testnet;
         helper.check_target_version(&network);
         // Add assertions to validate the behavior for TESTNET
@@ -88,9 +64,7 @@ mod tests {
 
     #[test]
     fn test_check_target_version_mainnet() {
-        let helper = MyUpgradeHelper {
-            target_version: String::from("some_target_version"),
-        };
+        let helper = MyUpgradeHelper {};
         let network = Network::Mainnet;
         helper.check_target_version(&network);
         // Add assertions to validate the behavior for MAINNET
