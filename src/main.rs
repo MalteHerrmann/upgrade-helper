@@ -10,12 +10,12 @@ fn main() {
     let target_version = inputs::get_target_version();
 
     // Create an instance of the helper
-    let helper = helper::UpgradeHelper::new(
+    let upgrade_helper = helper::UpgradeHelper::new(
         used_network, target_version,
     );
 
     // Check the target version
-    let valid_version = helper.check_target_version();
+    let valid_version = upgrade_helper.check_target_version();
     if !valid_version {
         process::exit(1);
     }
