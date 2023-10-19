@@ -1,40 +1,30 @@
 use regex::Regex;
 use crate::network::Network;
 
-// Trait to define the interface
-pub trait UpgradeHelper {
-    const DEFAULT_HOME: &'static str;
-    fn check_target_version(&self) -> bool;
-}
-
-pub struct MyUpgradeHelper {
+pub struct UpgradeHelper {
     network: Network,
     target_version: String,
 }
 
-impl MyUpgradeHelper {
+impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
     /// 
     /// # Arguments
     /// 
     /// * `network` - The network type used.
     /// * `target_version` - The target version to upgrade to.
-    pub fn new(network: Network, target_version: String) -> MyUpgradeHelper {
-        MyUpgradeHelper {
+    pub fn new(network: Network, target_version: String) -> UpgradeHelper {
+        UpgradeHelper {
             network,
             target_version,
         }
     }
-}
-
-impl UpgradeHelper for MyUpgradeHelper {
-    const DEFAULT_HOME: &'static str = "/path/to/default/home";
 
     /// Returns a boolean value if the defined target version fits 
     /// the requirements for the selected network type.
     /// The target version must be in the format `vX.Y.Z`.
     /// Testnet upgrades must use a release candidate with the suffix `-rcX`. 
-    fn check_target_version(&self) -> bool {
+    pub fn check_target_version(&self) -> bool {
         let re: Regex;
 
         match self.network {
@@ -42,6 +32,7 @@ impl UpgradeHelper for MyUpgradeHelper {
                 re = Regex::new(r"^v\d+\.\d{1}\.\d+(-rc\d+)*$").unwrap();
             },
             Network::Testnet => {
+                println!("Target version: {}", self.target_version);
                 re = Regex::new(r"^v\d+\.\d{1}\.\d+-rc\d+$").unwrap();
             },
             Network::Mainnet => {
@@ -56,5 +47,65 @@ impl UpgradeHelper for MyUpgradeHelper {
             println!("Invalid target version for {}: {}", self.network, self.target_version);
             false 
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::network;
+
+    #[test]
+    fn test_check_target_version_local_node_pass() {
+        let helper = UpgradeHelper::new( 
+            network::Network::LocalNode, 
+            "v14.0.0".to_string(),
+        );
+        assert_eq!(helper.check_target_version(), true);
+    }
+
+    #[test]
+    fn test_check_target_version_local_node_fail() {
+        let helper = UpgradeHelper::new( 
+            network::Network::LocalNode, 
+            "v14.0".to_string() ,
+        );
+        assert_eq!(helper.check_target_version(), false);
+    }
+
+    #[test]
+    fn test_check_target_version_testnet_pass() {
+        let helper = UpgradeHelper::new(
+            network::Network::Testnet,
+            "v14.0.0-rc1".to_string(),
+        );
+        assert_eq!(helper.check_target_version(), true);
+    }
+
+    #[test]
+    fn test_check_target_version_testnet_fail() {
+        let helper = UpgradeHelper::new(
+            network::Network::Testnet,
+            "v14.0.0".to_string(),
+        );
+        assert_eq!(helper.check_target_version(), false);
+    }
+
+    #[test]
+    fn test_check_target_version_mainnet_pass() {
+        let helper = UpgradeHelper::new(
+            network::Network::Mainnet,
+            "v14.0.0".to_string(),
+        );
+        assert_eq!(helper.check_target_version(), true);
+    }
+
+    #[test]
+    fn test_check_target_version_mainnet_fail() {
+        let helper = UpgradeHelper::new(
+            network::Network::Mainnet,
+            "v14.0.0-rc1".to_string(),
+        );
+        assert_eq!(helper.check_target_version(), false);
     }
 }

@@ -38,6 +38,7 @@ pub fn get_used_network() -> Network {
     used_network
 }
 
+/// Prompts the user to input the target version to upgrade to.
 pub fn get_target_version() -> String {
     let target_version: String;
     // Prompt the user to input the desired target version
