@@ -32,7 +32,6 @@ impl UpgradeHelper {
                 re = Regex::new(r"^v\d+\.\d{1}\.\d+(-rc\d+)*$").unwrap();
             },
             Network::Testnet => {
-                println!("Target version: {}", self.target_version);
                 re = Regex::new(r"^v\d+\.\d{1}\.\d+-rc\d+$").unwrap();
             },
             Network::Mainnet => {
@@ -44,7 +43,7 @@ impl UpgradeHelper {
         if valid_version { 
             true 
         } else { 
-            println!("Invalid target version for {}: {}", self.network, self.target_version);
+            println!("Invalid target version for {}: {}", self.network, self.target_version); // TODO: return error here instead
             false 
         }
     }
