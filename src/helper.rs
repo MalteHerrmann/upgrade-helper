@@ -2,8 +2,8 @@ use regex::Regex;
 use crate::network::Network;
 
 pub struct UpgradeHelper {
-    network: Network,
-    target_version: String,
+    pub network: Network,
+    pub target_version: String,
 }
 
 impl UpgradeHelper {
