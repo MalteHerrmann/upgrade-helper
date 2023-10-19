@@ -1,6 +1,7 @@
 mod helper;
 mod inputs;
 mod network;
+mod release;
 
 use std::process;
 
@@ -21,6 +22,6 @@ fn main() {
     }
 
     // Check if release was already created
-    let release_exists = helper::check_release_exists(upgrade_helper.target_version);
+    let release_exists = release::check_release_exists(upgrade_helper.target_version);
     println!("Release exists: {}", release_exists.unwrap())
 }
