@@ -2,6 +2,7 @@ mod helper;
 mod inputs;
 mod network;
 mod release;
+mod proposal;
 
 use std::process;
 
@@ -23,5 +24,16 @@ fn main() {
 
     // Check if release was already created
     let release_exists = release::check_release_exists(upgrade_helper.target_version);
-    println!("Release exists: {}", release_exists.unwrap())
+    println!("Release exists: {}", release_exists.unwrap());
+
+    // Prepare proposal
+    let proposal_res = proposal::prepare_proposal(
+        upgrade_helper.network,
+        upgrade_helper.target_version,
+        "v0.0.1".to_string(), // TODO: get previous version from proposals?
+    );
+    match proposal_res {
+        Ok(proposal) => println!("{}", proposal),
+        Err(err) => println!("Error: {}", err),
+    }
 }

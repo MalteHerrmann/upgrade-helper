@@ -1,0 +1,26 @@
+# Description
+
+## Author
+
+{{author}}
+
+## Software Upgrade Being Scheduled With This Proposal
+
+If successful, this proposal will schedule an Evmos {{network}} software upgrade at block height {{height}} (Mintscan estimates this to be around {{estimated_time}}) from its current version {{previous_version}} to {{version}}. This proposal has a voting time of {{voting_time}} hours.
+
+## Motivation
+
+By proposing a scheduled upgrade, we want to implement a smooth and transparent upgrade process, that is first proposed on Testnet and then on Mainnet. Software upgrades generally aim to improve current performance and add new features to the Evmos chain. For more information on the types of upgrades, please visit our [Software Upgrade Guide](https://docs.evmos.org/validate/upgrades).
+
+## Impact
+
+Evmos {{version}} contains the following enhancements:
+
+{{features}}
+
+A full changelog can be found [here]({{diff_link}}).
+
+## Testing
+
+The Evmos core team created an End-to-End testing suite that performs the software upgrade locally. These tests have been completed successfully for this upgrade. The instructions on how to run the End-to-End testing suite can be found [here](https://github.com/evmos/evmos/blob/main/tests/e2e/README.md). Additionally, the upgrade has been manually performed locally with a multi-node setup.
+On top of the upgrade tests, the Evmos team runs performance tests to monitor the impact of new versions.
