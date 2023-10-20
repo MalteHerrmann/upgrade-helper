@@ -17,7 +17,7 @@ pub fn prepare_proposal(
         .set_strict_mode(true);
 
     handlebars
-        .register_template_file("proposal", "templates/proposal.hbs")
+        .register_template_file("proposal", "src/templates/proposal.hbs")
         .unwrap();
 
     let data = json!({
