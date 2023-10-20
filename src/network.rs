@@ -1,7 +1,7 @@
 use std::fmt;
 
 // Enum to represent different network options
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Network {
     LocalNode,
     Testnet,

@@ -5,6 +5,8 @@ use handlebars::{
 use serde_json::json;
 use crate::network::Network;
 
+/// Prepares the proposal text by filling in the necessary information
+/// to the proposal template.
 pub fn prepare_proposal(
     network: Network,
     target_version: &str,
@@ -30,13 +32,23 @@ pub fn prepare_proposal(
         "features": "- neue Features",
         "height": 0, // TODO: get height from Mintscan?
         "name": proposal_name,
-        "network": format!("{}", network),
+        "network": format!("{}", network), // TODO: implement serialize trait here?
         "previous_version": previous_version,
         "version": target_version,
         "voting_time": if matches!(network, Network::Testnet) { "12 hours" } else { "120 hours" },
     });
 
     handlebars.render("proposal", &data)
+}
+
+/// Writes the proposal contents to a file.
+pub fn write_proposal_to_file(
+    proposal: &str,
+    network: Network,
+    target_version: &str,
+) -> Result<(), std::io::Error> {
+    let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
+    std::fs::write(proposal_file_name, proposal)
 }
 
 #[cfg(test)]
@@ -55,5 +67,29 @@ mod tests {
             "Error rendering proposal: {}",
             result.unwrap_err(),
         );
+    }
+
+    #[test]
+    fn test_write_proposal_to_file_pass() {
+        let result = write_proposal_to_file(
+            "test",
+            Network::Mainnet,
+            "v0.1.0",
+        );
+        assert!(
+            result.is_ok(),
+            "Error writing proposal to file: {}",
+            result.unwrap_err(),
+        );
+
+        // Check that file exists
+        let proposal_file_name = format!("proposal-{}-{}.md", Network::Mainnet, "v0.1.0");
+        assert!(
+            std::path::Path::new(proposal_file_name.as_str()).exists(),
+            "Proposal file does not exist",
+        );
+
+        // Clean up
+        std::fs::remove_file(proposal_file_name).unwrap();
     }
 }

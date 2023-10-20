@@ -33,10 +33,24 @@ fn main() {
         "v0.0.1", // TODO: get previous version from proposals?
     );
     match proposal_res {
-        Ok(proposal) => println!("{}", proposal),
         Err(err) => {
             println!("Error: {}", err);
             process::exit(1);
         },
+        _ => {},
+    }
+
+    // Write proposal to file
+    let write_res = proposal::write_proposal_to_file(
+        proposal_res.unwrap().as_str(),
+        upgrade_helper.network,
+        upgrade_helper.target_version.as_str(),
+    );
+    match write_res {
+        Err(err) => {
+            println!("Error: {}", err);
+            process::exit(1);
+        },
+        _ => {},
     }
 }
