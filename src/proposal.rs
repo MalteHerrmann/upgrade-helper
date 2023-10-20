@@ -22,15 +22,18 @@ pub fn prepare_proposal(
 
     let data = json!({
         "author": "Malte Herrmann, Evmos Core Team",
-        "name": proposal_name,
-        "height": 0, // TODO: get height from Mintscan?
-        "version": target_version,
-        "prev_version": previous_version,
-        "features": "- neue Features",
         "diff_link": format!("https://github.com/evmos/evmos/compare/{}..{}", 
             previous_version, 
             target_version,
         ),
+        "estimated_time": "4PM UTC, Monday, Sept. 25th, 2023",
+        "features": "- neue Features",
+        "height": 0, // TODO: get height from Mintscan?
+        "name": proposal_name,
+        "network": format!("{}", network),
+        "previous_version": previous_version,
+        "version": target_version,
+        "voting_time": if matches!(network, Network::Testnet) { "12 hours" } else { "120 hours" },
     });
 
     handlebars.render("proposal", &data)
@@ -47,6 +50,10 @@ mod tests {
             "v0.1.0",
             "v0.0.1",
         );
-        assert!(result.is_ok())
+        assert!(
+            result.is_ok(), 
+            "Error rendering proposal: {}",
+            result.unwrap_err(),
+        );
     }
 }

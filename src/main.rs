@@ -34,6 +34,9 @@ fn main() {
     );
     match proposal_res {
         Ok(proposal) => println!("{}", proposal),
-        Err(err) => println!("Error: {}", err),
+        Err(err) => {
+            println!("Error: {}", err);
+            process::exit(1);
+        },
     }
 }
