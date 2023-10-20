@@ -1,17 +1,18 @@
-extern crate handlebars;
-
-use handlebars::RenderError;
+use handlebars::{
+    Handlebars,
+    RenderError,
+};
 use serde_json::json;
 use crate::network::Network;
 
 pub fn prepare_proposal(
     network: Network,
-    target_version: String,
-    previous_version: String,
+    target_version: &str,
+    previous_version: &str,
 ) -> Result<String, RenderError> {
     let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
 
-    let mut handlebars = handlebars::Handlebars::new();
+    let mut handlebars = Handlebars::new();
     handlebars
         .set_strict_mode(true);
 
@@ -43,8 +44,8 @@ mod tests {
     fn test_prepare_proposal_pass() {
         let result = prepare_proposal(
             Network::Mainnet,
-            "v0.1.0".to_string(),
-            "v0.0.1".to_string(),
+            "v0.1.0",
+            "v0.0.1",
         );
         assert!(result.is_ok())
     }

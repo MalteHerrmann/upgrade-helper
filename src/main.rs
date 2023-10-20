@@ -13,7 +13,7 @@ fn main() {
 
     // Create an instance of the helper
     let upgrade_helper = helper::UpgradeHelper::new(
-        used_network, target_version,
+        used_network, target_version.as_str(),
     );
 
     // Check the target version
@@ -23,14 +23,14 @@ fn main() {
     }
 
     // Check if release was already created
-    let release_exists = release::check_release_exists(upgrade_helper.target_version);
+    let release_exists = release::check_release_exists(upgrade_helper.target_version.as_str());
     println!("Release exists: {}", release_exists.unwrap());
 
     // Prepare proposal
     let proposal_res = proposal::prepare_proposal(
         upgrade_helper.network,
-        upgrade_helper.target_version,
-        "v0.0.1".to_string(), // TODO: get previous version from proposals?
+        upgrade_helper.target_version.as_str(),
+        "v0.0.1", // TODO: get previous version from proposals?
     );
     match proposal_res {
         Ok(proposal) => println!("{}", proposal),

@@ -13,10 +13,10 @@ impl UpgradeHelper {
     /// 
     /// * `network` - The network type used.
     /// * `target_version` - The target version to upgrade to.
-    pub fn new(network: Network, target_version: String) -> UpgradeHelper {
+    pub fn new(network: Network, target_version: &str) -> UpgradeHelper {
         UpgradeHelper {
-            network,
-            target_version,
+            network: network,
+            target_version: target_version.to_string(),
         }
     }
 
@@ -58,7 +58,7 @@ mod tests {
     fn test_check_target_version_local_node_pass() {
         let helper = UpgradeHelper::new( 
             network::Network::LocalNode, 
-            "v14.0.0".to_string(),
+            "v14.0.0",
         );
         assert_eq!(helper.check_target_version(), true);
     }
@@ -67,7 +67,7 @@ mod tests {
     fn test_check_target_version_local_node_fail() {
         let helper = UpgradeHelper::new( 
             network::Network::LocalNode, 
-            "v14.0".to_string() ,
+            "v14.0",
         );
         assert_eq!(helper.check_target_version(), false);
     }
@@ -76,7 +76,7 @@ mod tests {
     fn test_check_target_version_testnet_pass() {
         let helper = UpgradeHelper::new(
             network::Network::Testnet,
-            "v14.0.0-rc1".to_string(),
+            "v14.0.0-rc1",
         );
         assert_eq!(helper.check_target_version(), true);
     }
@@ -85,7 +85,7 @@ mod tests {
     fn test_check_target_version_testnet_fail() {
         let helper = UpgradeHelper::new(
             network::Network::Testnet,
-            "v14.0.0".to_string(),
+            "v14.0.0",
         );
         assert_eq!(helper.check_target_version(), false);
     }
@@ -94,7 +94,7 @@ mod tests {
     fn test_check_target_version_mainnet_pass() {
         let helper = UpgradeHelper::new(
             network::Network::Mainnet,
-            "v14.0.0".to_string(),
+            "v14.0.0",
         );
         assert_eq!(helper.check_target_version(), true);
     }
@@ -103,7 +103,7 @@ mod tests {
     fn test_check_target_version_mainnet_fail() {
         let helper = UpgradeHelper::new(
             network::Network::Mainnet,
-            "v14.0.0-rc1".to_string(),
+            "v14.0.0-rc1",
         );
         assert_eq!(helper.check_target_version(), false);
     }
