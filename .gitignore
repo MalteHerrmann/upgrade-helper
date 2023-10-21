@@ -3,3 +3,6 @@
 
 # VS Code files
 /.vscode
+
+# JetBrains IDE files
+/.idea

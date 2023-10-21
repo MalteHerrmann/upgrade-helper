@@ -39,10 +39,10 @@ pub fn get_used_network() -> Network {
 }
 
 /// Prompts the user to input the target version to upgrade to.
-pub fn get_target_version() -> String {
+pub fn get_text(prompt: &str) -> String {
     let target_version: String;
     // Prompt the user to input the desired target version
-    let result = inquire::Text::new("Target version to upgrade to:")
+    let result = inquire::Text::new(prompt)
         .prompt();
     match result {
         Ok(version) => {
