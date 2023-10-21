@@ -3,17 +3,14 @@ use handlebars::{
     RenderError,
 };
 use serde_json::json;
+use crate::helper::UpgradeHelper;
 use crate::network::Network;
 
 /// Prepares the proposal text by filling in the necessary information
 /// to the proposal template.
 pub fn prepare_proposal(
-    network: Network,
-    target_version: &str,
-    previous_version: &str,
+    helper: &UpgradeHelper,
 ) -> Result<String, RenderError> {
-    let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
-
     let mut handlebars = Handlebars::new();
     handlebars
         .set_strict_mode(true);
@@ -25,17 +22,17 @@ pub fn prepare_proposal(
     let data = json!({
         "author": "Malte Herrmann, Evmos Core Team",
         "diff_link": format!("https://github.com/evmos/evmos/compare/{}..{}", 
-            previous_version, 
-            target_version,
+            helper.previous_version,
+            helper.target_version,
         ),
         "estimated_time": "4PM UTC, Monday, Sept. 25th, 2023",
         "features": "- neue Features",
         "height": 0, // TODO: get height from Mintscan?
-        "name": proposal_name,
-        "network": format!("{}", network), // TODO: implement serialize trait here?
-        "previous_version": previous_version,
-        "version": target_version,
-        "voting_time": if matches!(network, Network::Testnet) { "12 hours" } else { "120 hours" },
+        "name": helper.proposal_name,
+        "network": format!("{}", helper.network), // TODO: implement serialize trait here?
+        "previous_version": helper.previous_version,
+        "version": helper.target_version,
+        "voting_time": if matches!(helper.network, Network::Testnet) { 12 } else { 120 },
     });
 
     handlebars.render("proposal", &data)
@@ -57,13 +54,15 @@ mod tests {
 
     #[test]
     fn test_prepare_proposal_pass() {
-        let result = prepare_proposal(
+        let helper = UpgradeHelper::new(
             Network::Mainnet,
-            "v0.1.0",
             "v0.0.1",
+            "v0.1.0",
         );
+
+        let result = prepare_proposal(&helper);
         assert!(
-            result.is_ok(), 
+            result.is_ok(),
             "Error rendering proposal: {}",
             result.unwrap_err(),
         );

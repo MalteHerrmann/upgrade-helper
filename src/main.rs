@@ -41,11 +41,7 @@ fn main() {
     println!("Release exists: {}", release_exists.unwrap());
 
     // Prepare proposal
-    let proposal_res = proposal::prepare_proposal(
-        upgrade_helper.network,
-        upgrade_helper.target_version.as_str(),
-        "v0.0.1", // TODO: get previous version from proposals?
-    );
+    let proposal_res = proposal::prepare_proposal(&upgrade_helper);
     match proposal_res {
         Err(err) => {
             println!("Error: {}", err);
