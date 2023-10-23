@@ -1,6 +1,7 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use handlebars::{Handlebars, RenderError};
+use chrono::Utc;
 use serde_json::json;
 
 /// Prepares the proposal text by filling in the necessary information
@@ -48,7 +49,7 @@ mod tests {
 
     #[test]
     fn test_prepare_proposal_pass() {
-        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0");
+        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now());
 
         let result = prepare_proposal(&helper);
         assert!(

@@ -1,5 +1,7 @@
 use crate::network::Network;
-use chrono::{Datelike, DateTime, Duration, Timelike, TimeZone, Utc, Weekday};
+use chrono::{
+    DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
+};
 use inquire::{DateSelect, Select};
 use std::{ops::Add, process};
 
@@ -53,13 +55,9 @@ pub fn get_text(prompt: &str) -> String {
 
 /// Prompts the user to input the date for the planned upgrade.
 /// The date is calculated based on the current time and the voting period duration.
-pub fn get_upgrade_date(
-    voting_period: Duration,
-    utc_time: DateTime<Utc>,
-) -> String {
+pub fn get_upgrade_date(voting_period: Duration, utc_time: DateTime<Utc>) -> Option<DateTime<Utc>> {
     let default_date = calculate_planned_date(voting_period, utc_time);
 
-    let planned_date: String;
     // Prompt the user to input the desired upgrade date
     let result = DateSelect::new("Select date for the planned upgrade")
         .with_min_date(utc_time.date_naive())
@@ -68,28 +66,21 @@ pub fn get_upgrade_date(
         .prompt();
     match result {
         Ok(date) => {
-            if date.weekday() == Weekday::Sat || date.weekday() == Weekday::Sun {
-                println!("Invalid date (weekend) selected: {}", date.to_string());
-                process::exit(1);
-            }
-            planned_date = date.to_string();
+            let time = NaiveTime::from_hms_opt(16, 0, 0).unwrap();
+            let planned_naive_date_time = NaiveDateTime::new(date, time);
+            Some(Utc.from_local_datetime(&planned_naive_date_time).unwrap())
         }
         Err(e) => {
             println!("Error selecting planned date: {}", e);
-            process::exit(1);
+            return None;
         }
     }
-
-    planned_date
 }
 
 /// Calculates the date for the planned upgrade given the current time and the voting period duration.
 /// Per default, 4 pm UTC is used as a reference time.
 /// If the passed UTC time is after 2 pm UTC, the planned date will be shifted to the next day.
-fn calculate_planned_date(
-    voting_period: Duration,
-    utc_time: DateTime<Utc>,
-) -> DateTime<Utc> {
+fn calculate_planned_date(voting_period: Duration, utc_time: DateTime<Utc>) -> DateTime<Utc> {
     let mut end_of_voting = utc_time.add(voting_period);
 
     // NOTE: if using the tool after 2pm UTC or the end of voting would be at or after 2 PM, the upgrade should happen on the next day
@@ -104,16 +95,25 @@ fn calculate_planned_date(
         end_of_voting = end_of_voting.add(Duration::days(1));
     }
 
-    Utc
-        .with_ymd_and_hms(
-            end_of_voting.year(),
-            end_of_voting.month(),
-            end_of_voting.day(),
-            16,
-            0,
-            0,
-        )
-        .unwrap()
+    Utc.with_ymd_and_hms(
+        end_of_voting.year(),
+        end_of_voting.month(),
+        end_of_voting.day(),
+        16,
+        0,
+        0,
+    )
+    .unwrap()
+}
+
+/// Checks if the passed upgrade time is valid.
+/// The upgrade time cannot be on a weekend.
+pub fn is_valid_upgrade_time(upgrade_time: DateTime<Utc>) -> bool {
+    if upgrade_time.weekday() == Weekday::Sat || upgrade_time.weekday() == Weekday::Sun {
+        return false;
+    }
+
+    true
 }
 
 #[cfg(test)]
