@@ -55,7 +55,7 @@ pub fn get_text(prompt: &str) -> String {
 /// The date is calculated based on the current time and the voting period duration.
 pub fn get_upgrade_date(
     voting_period: Duration,
-    utc_time: DateTime<chrono::Utc>,
+    utc_time: DateTime<Utc>,
 ) -> String {
     let default_date = calculate_planned_date(voting_period, utc_time);
 
@@ -68,6 +68,10 @@ pub fn get_upgrade_date(
         .prompt();
     match result {
         Ok(date) => {
+            if date.weekday() == Weekday::Sat || date.weekday() == Weekday::Sun {
+                println!("Invalid date (weekend) selected: {}", date.to_string());
+                process::exit(1);
+            }
             planned_date = date.to_string();
         }
         Err(e) => {
@@ -84,8 +88,8 @@ pub fn get_upgrade_date(
 /// If the passed UTC time is after 2 pm UTC, the planned date will be shifted to the next day.
 fn calculate_planned_date(
     voting_period: Duration,
-    utc_time: DateTime<chrono::Utc>,
-) -> DateTime<chrono::Utc> {
+    utc_time: DateTime<Utc>,
+) -> DateTime<Utc> {
     let mut end_of_voting = utc_time.add(voting_period);
 
     // NOTE: if using the tool after 2pm UTC or the end of voting would be at or after 2 PM, the upgrade should happen on the next day
