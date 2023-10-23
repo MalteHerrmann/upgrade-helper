@@ -1,25 +1,16 @@
 use crate::network::Network;
-use chrono::{Datelike, Duration, Timelike, TimeZone};
-use inquire::{
-    Select,
-    DateSelect,
-};
-use std::process;
+use chrono::{Datelike, Duration, TimeZone, Timelike};
+use inquire::{DateSelect, Select};
+use std::{ops::Add, process};
 
 /// Prompts the user to select the network type used.
 pub fn get_used_network() -> Network {
     let used_network: Network;
 
-    let network_options = vec![
-        "Local Node",
-        "Testnet",
-        "Mainnet",
-    ];
+    let network_options = vec!["Local Node", "Testnet", "Mainnet"];
 
     // Prompt the user to select the network
-    let chosen_network = Select::new(
-        "Select network", network_options,
-    ).prompt();
+    let chosen_network = Select::new("Select network", network_options).prompt();
 
     match chosen_network {
         Ok(choice) => {
@@ -30,11 +21,11 @@ pub fn get_used_network() -> Network {
                 &_ => {
                     println!("Invalid network selected: {:?}", choice);
                     process::exit(1); // TODO: return error here instead of exiting in here
-                },
+                }
             }
         }
-        Err(e) => { 
-            println!("Error selecting network: {}", e); 
+        Err(e) => {
+            println!("Error selecting network: {}", e);
             process::exit(1);
         }
     }
@@ -46,14 +37,13 @@ pub fn get_used_network() -> Network {
 pub fn get_text(prompt: &str) -> String {
     let target_version: String;
     // Prompt the user to input the desired target version
-    let result = inquire::Text::new(prompt)
-        .prompt();
+    let result = inquire::Text::new(prompt).prompt();
     match result {
         Ok(version) => {
             target_version = version;
         }
-        Err(e) => { 
-            println!("Error selecting target version: {}", e); 
+        Err(e) => {
+            println!("Error selecting target version: {}", e);
             process::exit(1);
         }
     }
@@ -62,7 +52,11 @@ pub fn get_text(prompt: &str) -> String {
 }
 
 /// Prompts the user to input the date for the planned upgrade.
-pub fn get_upgrade_date(voting_period: Duration, utc_time: chrono::DateTime<chrono::Utc>) -> String {
+/// The date is calculated based on the current time and the voting period duration.
+pub fn get_upgrade_date(
+    voting_period: Duration,
+    utc_time: chrono::DateTime<chrono::Utc>,
+) -> String {
     let default_date = calculate_planned_date(voting_period, utc_time);
 
     let planned_date: String;
@@ -87,7 +81,10 @@ pub fn get_upgrade_date(voting_period: Duration, utc_time: chrono::DateTime<chro
 /// Calculates the date for the planned upgrade given the current time and the voting period duration.
 /// Per default, 4 pm UTC is used as a reference time.
 /// If the passed UTC time is after 2 pm UTC, the planned date will be shifted to the next day.
-fn calculate_planned_date(voting_period: Duration, utc_time: chrono::DateTime<chrono::Utc>) -> chrono::DateTime<chrono::Utc> {
+fn calculate_planned_date(
+    voting_period: Duration,
+    utc_time: chrono::DateTime<chrono::Utc>,
+) -> chrono::DateTime<chrono::Utc> {
     let mut end_of_voting = utc_time.add(voting_period);
 
     // NOTE: if using the tool after 2pm UTC, the upgrade should happen on the next day
@@ -95,24 +92,23 @@ fn calculate_planned_date(voting_period: Duration, utc_time: chrono::DateTime<ch
         end_of_voting = end_of_voting.add(Duration::days(1));
     }
 
-    chrono::Utc.with_ymd_and_hms(
-        end_of_voting.year(),
-        end_of_voting.month(),
-        end_of_voting.day(),
-        16,
-        0,
-        0,
-    ).unwrap()
+    chrono::Utc
+        .with_ymd_and_hms(
+            end_of_voting.year(),
+            end_of_voting.month(),
+            end_of_voting.day(),
+            16,
+            0,
+            0,
+        )
+        .unwrap()
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
-    use rstest::{
-        fixture,
-        rstest
-    };
-    use chrono::{Duration, DateTime, Utc};
+    use chrono::{DateTime, Duration, Utc};
+    use rstest::{fixture, rstest};
 
     #[fixture]
     fn monday_morning() -> DateTime<Utc> {

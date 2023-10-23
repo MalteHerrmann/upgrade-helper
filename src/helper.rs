@@ -11,11 +11,7 @@ pub struct UpgradeHelper {
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
-    pub fn new(
-        network: Network,
-        previous_version: &str,
-        target_version: &str,
-    ) -> UpgradeHelper {
+    pub fn new(network: Network, previous_version: &str, target_version: &str) -> UpgradeHelper {
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
 
         let voting_period: Duration;

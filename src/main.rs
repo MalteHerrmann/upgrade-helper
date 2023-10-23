@@ -1,12 +1,12 @@
 mod helper;
 mod inputs;
 mod network;
-mod release;
 mod proposal;
+mod release;
 mod version;
 
+use chrono::Utc;
 use std::process;
-use chrono::{Utc};
 
 fn main() {
     // Query and check the network to use
@@ -22,11 +22,12 @@ fn main() {
 
     // Query and check the target version to upgrade to
     let target_version = inputs::get_text("Target version to upgrade to:");
-    let valid_version = version::is_valid_target_version(
-        used_network, target_version.as_str(),
-    );
+    let valid_version = version::is_valid_target_version(used_network, target_version.as_str());
     if !valid_version {
-        println!("Invalid target version for {}: {}", used_network, target_version);
+        println!(
+            "Invalid target version for {}: {}",
+            used_network, target_version
+        );
         process::exit(1);
     }
 
@@ -51,8 +52,8 @@ fn main() {
         Err(err) => {
             println!("Error: {}", err);
             process::exit(1);
-        },
-        _ => {},
+        }
+        _ => {}
     }
 
     // Write proposal to file
@@ -65,7 +66,7 @@ fn main() {
         Err(err) => {
             println!("Error: {}", err);
             process::exit(1);
-        },
-        _ => {},
+        }
+        _ => {}
     }
 }
