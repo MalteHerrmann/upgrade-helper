@@ -1,4 +1,4 @@
-use crate::{network::Network, inputs, proposal, release, version};
+use crate::{inputs, network::Network, proposal, release, version};
 use chrono::{DateTime, Duration, Utc};
 use std::process;
 
@@ -13,7 +13,12 @@ pub struct UpgradeHelper {
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
-    pub fn new(network: Network, previous_version: &str, target_version: &str, upgrade_time: DateTime<Utc>) -> UpgradeHelper {
+    pub fn new(
+        network: Network,
+        previous_version: &str,
+        target_version: &str,
+        upgrade_time: DateTime<Utc>,
+    ) -> UpgradeHelper {
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
 
         let voting_period: Duration;
@@ -36,7 +41,8 @@ impl UpgradeHelper {
     /// Validates the upgrade helper.
     pub fn validate(&self) {
         // Check if the target version is valid
-        let valid_version = version::is_valid_target_version(self.network, self.target_version.as_str());
+        let valid_version =
+            version::is_valid_target_version(self.network, self.target_version.as_str());
         if !valid_version {
             println!(
                 "Invalid target version for {}: {}",
@@ -72,7 +78,9 @@ impl UpgradeHelper {
         let proposal: String;
         let proposal_res = proposal::prepare_proposal(&self);
         match proposal_res {
-            Ok(contents) => { proposal = contents; }
+            Ok(contents) => {
+                proposal = contents;
+            }
             Err(e) => {
                 println!("Error preparing proposal: {}", e);
                 process::exit(1);

@@ -1,7 +1,7 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
-use handlebars::{Handlebars, RenderError};
 use chrono::Utc;
+use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 
 /// Prepares the proposal text by filling in the necessary information
