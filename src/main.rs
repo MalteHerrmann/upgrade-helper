@@ -6,6 +6,7 @@ mod proposal;
 mod version;
 
 use std::process;
+use chrono::{Utc};
 
 fn main() {
     // Query and check the network to use
@@ -35,6 +36,10 @@ fn main() {
         previous_version.as_str(),
         target_version.as_str(),
     );
+
+    // Query the date for the upgrade
+    let upgrade_date = inputs::get_upgrade_date(upgrade_helper.voting_period, Utc::now());
+    println!("Upgrade date: {}", upgrade_date);
 
     // Check if release was already created
     let release_exists = release::check_release_exists(upgrade_helper.target_version.as_str());

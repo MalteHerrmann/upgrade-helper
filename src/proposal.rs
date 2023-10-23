@@ -32,7 +32,7 @@ pub fn prepare_proposal(
         "network": format!("{}", helper.network), // TODO: implement serialize trait here?
         "previous_version": helper.previous_version,
         "version": helper.target_version,
-        "voting_time": if matches!(helper.network, Network::Testnet) { 12 } else { 120 },
+        "voting_time": helper.voting_period.num_hours(),
     });
 
     handlebars.render("proposal", &data)
