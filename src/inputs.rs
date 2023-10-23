@@ -1,5 +1,5 @@
 use crate::network::Network;
-use chrono::{Datelike, Duration, TimeZone, Timelike};
+use chrono::{Datelike, DateTime, Duration, Timelike, TimeZone, Utc, Weekday};
 use inquire::{DateSelect, Select};
 use std::{ops::Add, process};
 
@@ -55,7 +55,7 @@ pub fn get_text(prompt: &str) -> String {
 /// The date is calculated based on the current time and the voting period duration.
 pub fn get_upgrade_date(
     voting_period: Duration,
-    utc_time: chrono::DateTime<chrono::Utc>,
+    utc_time: DateTime<chrono::Utc>,
 ) -> String {
     let default_date = calculate_planned_date(voting_period, utc_time);
 
@@ -64,6 +64,7 @@ pub fn get_upgrade_date(
     let result = DateSelect::new("Select date for the planned upgrade")
         .with_min_date(utc_time.date_naive())
         .with_default(default_date.date_naive())
+        .with_week_start(Weekday::Mon)
         .prompt();
     match result {
         Ok(date) => {
@@ -83,29 +84,23 @@ pub fn get_upgrade_date(
 /// If the passed UTC time is after 2 pm UTC, the planned date will be shifted to the next day.
 fn calculate_planned_date(
     voting_period: Duration,
-    utc_time: chrono::DateTime<chrono::Utc>,
-) -> chrono::DateTime<chrono::Utc> {
-    println!("input: {}", utc_time);
+    utc_time: DateTime<chrono::Utc>,
+) -> DateTime<chrono::Utc> {
     let mut end_of_voting = utc_time.add(voting_period);
-    println!("end of voting: {}", end_of_voting);
 
     // NOTE: if using the tool after 2pm UTC or the end of voting would be at or after 2 PM, the upgrade should happen on the next day
     if utc_time.hour() > 14 || end_of_voting.hour() >= 16 {
         end_of_voting = end_of_voting.add(Duration::days(1));
     }
-    println!("end of voting post: {}", end_of_voting);
 
     // NOTE: we don't want to upgrade on a weekend, so we shift the upgrade to the next monday
-    println!("weekday: {}", end_of_voting.weekday());
-    if end_of_voting.weekday() == chrono::Weekday::Sat {
-        println!("adding two days because it's Saturday");
+    if end_of_voting.weekday() == Weekday::Sat {
         end_of_voting = end_of_voting.add(Duration::days(2));
-    } else if end_of_voting.weekday() == chrono::Weekday::Sun {
-        println!("adding a day because it's Sunday");
+    } else if end_of_voting.weekday() == Weekday::Sun {
         end_of_voting = end_of_voting.add(Duration::days(1));
     }
 
-    chrono::Utc
+    Utc
         .with_ymd_and_hms(
             end_of_voting.year(),
             end_of_voting.month(),
