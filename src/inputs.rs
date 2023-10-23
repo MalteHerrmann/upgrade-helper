@@ -85,10 +85,23 @@ fn calculate_planned_date(
     voting_period: Duration,
     utc_time: chrono::DateTime<chrono::Utc>,
 ) -> chrono::DateTime<chrono::Utc> {
+    println!("input: {}", utc_time);
     let mut end_of_voting = utc_time.add(voting_period);
+    println!("end of voting: {}", end_of_voting);
 
-    // NOTE: if using the tool after 2pm UTC, the upgrade should happen on the next day
-    if utc_time.hour() > 14 {
+    // NOTE: if using the tool after 2pm UTC or the end of voting would be at or after 2 PM, the upgrade should happen on the next day
+    if utc_time.hour() > 14 || end_of_voting.hour() >= 16 {
+        end_of_voting = end_of_voting.add(Duration::days(1));
+    }
+    println!("end of voting post: {}", end_of_voting);
+
+    // NOTE: we don't want to upgrade on a weekend, so we shift the upgrade to the next monday
+    println!("weekday: {}", end_of_voting.weekday());
+    if end_of_voting.weekday() == chrono::Weekday::Sat {
+        println!("adding two days because it's Saturday");
+        end_of_voting = end_of_voting.add(Duration::days(2));
+    } else if end_of_voting.weekday() == chrono::Weekday::Sun {
+        println!("adding a day because it's Sunday");
         end_of_voting = end_of_voting.add(Duration::days(1));
     }
 
@@ -118,6 +131,11 @@ mod tests {
     #[fixture]
     fn monday_evening() -> DateTime<Utc> {
         Utc.with_ymd_and_hms(2023, 10, 23, 20, 0, 0).unwrap()
+    }
+
+    #[fixture]
+    fn friday_morning() -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(2023, 10, 27, 11, 0, 0).unwrap()
     }
 
     #[fixture]
@@ -174,8 +192,35 @@ mod tests {
     ) {
         assert_eq!(
             calculate_planned_date(mainnet_voting_period, monday_evening),
-            Utc.with_ymd_and_hms(2023, 10, 29, 16, 0, 0).unwrap(),
+            // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+120h
+            Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on monday evening",
+        );
+    }
+
+    #[rstest]
+    fn test_calculate_planned_date_friday_morning_testnet(
+        friday_morning: DateTime<Utc>,
+        testnet_voting_period: Duration,
+    ) {
+        assert_eq!(
+            calculate_planned_date(testnet_voting_period, friday_morning),
+            // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+12h
+            Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
+            "expected different date for testnet upgrade when calling on thursday morning",
+        );
+    }
+
+    #[rstest]
+    fn test_calculate_planned_date_friday_morning_mainnet(
+        friday_morning: DateTime<Utc>,
+        mainnet_voting_period: Duration,
+    ) {
+        assert_eq!(
+            calculate_planned_date(mainnet_voting_period, friday_morning),
+            // NOTE: the upgrade should happen on the next wednesday 4PM
+            Utc.with_ymd_and_hms(2023, 11, 1, 16, 0, 0).unwrap(),
+            "expected different date for mainnet upgrade when calling on thursday morning",
         );
     }
 }
