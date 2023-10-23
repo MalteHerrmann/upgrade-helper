@@ -1,6 +1,5 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
-use chrono::Utc;
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 
@@ -46,6 +45,7 @@ pub fn write_proposal_to_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
 
     #[test]
     fn test_prepare_proposal_pass() {
