@@ -5,6 +5,22 @@ use chrono::{
 use inquire::{DateSelect, Select};
 use std::{ops::Add, process};
 
+const MONTHS: [&str; 13] = [
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "Septemer",
+    "October",
+    "November",
+    "December",
+];
+
 /// Prompts the user to select the network type used.
 pub fn get_used_network() -> Network {
     let used_network: Network;
@@ -116,6 +132,20 @@ pub fn is_valid_upgrade_time(upgrade_time: DateTime<Utc>) -> bool {
     true
 }
 
+/// Returns a string representation of the upgrade time.
+pub fn get_time_string(time: DateTime<Utc>) -> String {
+    let (is_pm, hour) = time.hour12();
+    format!("{}{} {} on {}., {} {}., {}",
+        hour,
+        if is_pm { "PM" } else { "AM" },
+        time.timezone(),
+        time.weekday(),
+        MONTHS[time.month() as usize],
+        time.day(),
+        time.year(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -220,6 +250,26 @@ mod tests {
             // NOTE: the upgrade should happen on the next wednesday 4PM
             Utc.with_ymd_and_hms(2023, 11, 1, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on thursday morning",
+        );
+    }
+
+    #[test]
+    fn test_get_time_string_october_morning() {
+        let time = Utc.with_ymd_and_hms(2023, 10, 23, 4, 0, 0).unwrap();
+        assert_eq!(
+            get_time_string(time),
+            "4AM UTC on Mon., October 23., 2023",
+            "expected different time string",
+        );
+    }
+
+    #[test]
+    fn test_get_time_string_february_evening() {
+        let time = Utc.with_ymd_and_hms(2023, 2, 1, 16, 0, 0).unwrap();
+        assert_eq!(
+            get_time_string(time),
+            "4PM UTC on Wed., February 1., 2023",
+            "expected different time string",
         );
     }
 }

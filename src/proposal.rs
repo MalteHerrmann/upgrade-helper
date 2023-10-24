@@ -1,5 +1,4 @@
-use crate::helper::UpgradeHelper;
-use crate::network::Network;
+use crate::{helper::UpgradeHelper, inputs::get_time_string, network::Network};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 
@@ -19,7 +18,7 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
             helper.previous_version,
             helper.target_version,
         ),
-        "estimated_time": "4PM UTC, Monday, Sept. 25th, 2023",
+        "estimated_time": get_time_string(helper.upgrade_time),
         "features": "- neue Features",
         "height": 0, // TODO: get height from Mintscan?
         "name": helper.proposal_name,
