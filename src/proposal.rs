@@ -1,19 +1,12 @@
-use handlebars::{
-    Handlebars,
-    RenderError,
-};
+use crate::{helper::UpgradeHelper, inputs::get_time_string, network::Network};
+use handlebars::{Handlebars, RenderError};
 use serde_json::json;
-use crate::helper::UpgradeHelper;
-use crate::network::Network;
 
 /// Prepares the proposal text by filling in the necessary information
 /// to the proposal template.
-pub fn prepare_proposal(
-    helper: &UpgradeHelper,
-) -> Result<String, RenderError> {
+pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
     let mut handlebars = Handlebars::new();
-    handlebars
-        .set_strict_mode(true);
+    handlebars.set_strict_mode(true);
 
     handlebars
         .register_template_file("proposal", "src/templates/proposal.hbs")
@@ -21,18 +14,18 @@ pub fn prepare_proposal(
 
     let data = json!({
         "author": "Malte Herrmann, Evmos Core Team",
-        "diff_link": format!("https://github.com/evmos/evmos/compare/{}..{}", 
+        "diff_link": format!("https://github.com/evmos/evmos/compare/{}..{}",
             helper.previous_version,
             helper.target_version,
         ),
-        "estimated_time": "4PM UTC, Monday, Sept. 25th, 2023",
+        "estimated_time": get_time_string(helper.upgrade_time),
         "features": "- neue Features",
         "height": 0, // TODO: get height from Mintscan?
         "name": helper.proposal_name,
         "network": format!("{}", helper.network), // TODO: implement serialize trait here?
         "previous_version": helper.previous_version,
         "version": helper.target_version,
-        "voting_time": if matches!(helper.network, Network::Testnet) { 12 } else { 120 },
+        "voting_time": helper.voting_period.num_hours(),
     });
 
     handlebars.render("proposal", &data)
@@ -51,14 +44,11 @@ pub fn write_proposal_to_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
 
     #[test]
     fn test_prepare_proposal_pass() {
-        let helper = UpgradeHelper::new(
-            Network::Mainnet,
-            "v0.0.1",
-            "v0.1.0",
-        );
+        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now());
 
         let result = prepare_proposal(&helper);
         assert!(
@@ -70,11 +60,7 @@ mod tests {
 
     #[test]
     fn test_write_proposal_to_file_pass() {
-        let result = write_proposal_to_file(
-            "test",
-            Network::Mainnet,
-            "v0.1.0",
-        );
+        let result = write_proposal_to_file("test", Network::Mainnet, "v0.1.0");
         assert!(
             result.is_ok(),
             "Error writing proposal to file: {}",

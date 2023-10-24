@@ -1,13 +1,16 @@
 mod helper;
 mod inputs;
 mod network;
-mod release;
 mod proposal;
+mod release;
 mod version;
 
+use chrono::{DateTime, Utc};
+use helper::UpgradeHelper;
 use std::process;
 
-fn main() {
+/// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
+fn get_helper_from_inputs() -> UpgradeHelper {
     // Query and check the network to use
     let used_network = inputs::get_used_network();
 
@@ -21,46 +24,44 @@ fn main() {
 
     // Query and check the target version to upgrade to
     let target_version = inputs::get_text("Target version to upgrade to:");
-    let valid_version = version::is_valid_target_version(
-        used_network, target_version.as_str(),
-    );
+    let valid_version = version::is_valid_target_version(used_network, target_version.as_str());
     if !valid_version {
-        println!("Invalid target version for {}: {}", used_network, target_version);
+        println!(
+            "Invalid target version for {}: {}",
+            used_network, target_version
+        );
         process::exit(1);
     }
 
+    // Query the date and time for the upgrade
+    let upgrade_time: DateTime<Utc>;
+    let voting_period = helper::get_voting_period(used_network);
+    let time_option = inputs::get_upgrade_date(voting_period, Utc::now());
+    match time_option {
+        Some(time) => {
+            upgrade_time = time;
+        }
+        None => {
+            process::exit(1);
+        }
+    }
+
     // Create an instance of the helper
-    let upgrade_helper = helper::UpgradeHelper::new(
+    UpgradeHelper::new(
         used_network,
         previous_version.as_str(),
         target_version.as_str(),
-    );
+        upgrade_time,
+    )
+}
 
-    // Check if release was already created
-    let release_exists = release::check_release_exists(upgrade_helper.target_version.as_str());
-    println!("Release exists: {}", release_exists.unwrap());
+fn main() {
+    // Create an instance of the helper
+    let upgrade_helper = get_helper_from_inputs();
 
-    // Prepare proposal
-    let proposal_res = proposal::prepare_proposal(&upgrade_helper);
-    match proposal_res {
-        Err(err) => {
-            println!("Error: {}", err);
-            process::exit(1);
-        },
-        _ => {},
-    }
+    // Validate the helper configuration
+    upgrade_helper.validate();
 
-    // Write proposal to file
-    let write_res = proposal::write_proposal_to_file(
-        proposal_res.unwrap().as_str(),
-        upgrade_helper.network,
-        upgrade_helper.target_version.as_str(),
-    );
-    match write_res {
-        Err(err) => {
-            println!("Error: {}", err);
-            process::exit(1);
-        },
-        _ => {},
-    }
+    // Run the main functionality of the helper.
+    upgrade_helper.run();
 }
