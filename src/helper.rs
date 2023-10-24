@@ -20,13 +20,7 @@ impl UpgradeHelper {
         upgrade_time: DateTime<Utc>,
     ) -> UpgradeHelper {
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
-
-        let voting_period: Duration;
-        match network {
-            Network::LocalNode => voting_period = Duration::hours(1),
-            Network::Testnet => voting_period = Duration::hours(12),
-            Network::Mainnet => voting_period = Duration::hours(120),
-        }
+        let voting_period = get_voting_period(network);
 
         UpgradeHelper {
             network,
@@ -34,7 +28,7 @@ impl UpgradeHelper {
             target_version: target_version.to_string(),
             proposal_name,
             voting_period,
-            upgrade_time: upgrade_time,
+            upgrade_time,
         }
     }
 
