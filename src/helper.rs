@@ -1,4 +1,4 @@
-use crate::{inputs, network::Network, proposal, release, version};
+use crate::{block::get_estimated_height, inputs, network::Network, proposal, release, version};
 use chrono::{DateTime, Duration, Utc};
 use std::process;
 
@@ -9,6 +9,7 @@ pub struct UpgradeHelper {
     pub proposal_name: String,
     pub upgrade_time: DateTime<Utc>,
     pub voting_period: Duration,
+    pub upgrade_height: u64,
 }
 
 impl UpgradeHelper {
@@ -21,6 +22,7 @@ impl UpgradeHelper {
     ) -> UpgradeHelper {
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
+        let upgrade_height = get_estimated_height(network, upgrade_time);
 
         UpgradeHelper {
             network,
@@ -29,6 +31,7 @@ impl UpgradeHelper {
             proposal_name,
             voting_period,
             upgrade_time,
+            upgrade_height,
         }
     }
 
