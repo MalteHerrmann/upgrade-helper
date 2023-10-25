@@ -2,6 +2,7 @@ extern crate reqwest;
 use crate::network::Network;
 use chrono::{DateTime, TimeZone, Utc};
 use regex::Captures;
+use url::Url;
 
 /// Represents a block from the Evmos network.
 #[derive(Debug)]
@@ -13,27 +14,53 @@ pub struct Block {
 /// Gets the estimated block height for the given upgrade time.
 pub fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u64 {
     let block = get_latest_block(network);
-    println!("Block: {:?}", block);
+    let block_minus_n = get_block(network, block.height - 50_000);
 
     block.height
 }
 
 /// Gets the latest block from the Evmos network.
 fn get_latest_block(network: Network) -> Block {
-    let url: &str;
-    url = match network {
-        Network::LocalNode => "http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest",
-        Network::Mainnet => {
-            "https://rest.evmos.lava.build/cosmos/base/tendermint/v1beta1/blocks/latest"
-        }
-        Network::Testnet => {
-            "https://rest.evmos-testnet.lava.build/cosmos/base/tendermint/v1beta1/blocks/latest"
-        }
-    };
+    let url = get_url(network, "cosmos/base/tendermint/v1beta1/blocks/latest").unwrap();
     let response =
         reqwest::blocking::get(url).expect("the latest block should be successfully queried");
 
     process_block_body(response.text().unwrap())
+}
+
+/// Builds the URL for the given REST endpoint.
+fn get_url(network: Network, endpoint: &str) -> Result<Url, url::ParseError> {
+    let base_url = get_rest_provider(network);
+    base_url.join(endpoint)
+}
+
+/// Gets the block at the given height from the Evmos network.
+fn get_block(network: Network, height: u64) -> Block {
+    // Combine the REST endpoint with the block height
+    let base_url = get_rest_provider(network);
+    let blocks_endpoint = "/blocks/";
+    let url = base_url
+        .join(blocks_endpoint)
+        .expect("the blocks endpoint should be valid")
+        .join(height.to_string().as_str())
+        .expect("the blocks endpoint should be valid");
+
+    let response = reqwest::blocking::get(url)
+        .expect("the block should be successfully queried");
+
+    process_block_body(response.text().unwrap())
+}
+
+/// Returns the appropriate REST provider for the given network.
+fn get_rest_provider(network: Network) -> Url {
+    let base_url: &str;
+    match network {
+        Network::LocalNode => base_url = "http://localhost:1317",
+        Network::Mainnet => base_url = "https://rest.evmos.lava.build",
+        Network::Testnet => base_url = "https://rest.evmos-testnet.lava.build",
+    };
+
+    Url::parse(base_url).unwrap()
 }
 
 /// Processes the block body.
@@ -86,6 +113,28 @@ mod tests {
     fn test_get_latest_block_testnet() {
         let block = get_latest_block(Network::Testnet);
         assert!(block.height > 0);
+    }
+
+    #[test]
+    fn test_get_block_mainnet() {
+        let block = get_block(Network::Mainnet, 16705125);
+        assert_eq!(block.height, 16705125, "expected a different block height");
+        assert_eq!(
+            block.time,
+            Utc.with_ymd_and_hms(2023, 10, 25, 10, 09, 34).unwrap(),
+            "expected a different block time",
+        );
+    }
+
+    #[test]
+    fn test_get_block_testnet() {
+        let block = get_block(Network::Testnet, 18182953);
+        assert_eq!(block.height, 18182953, "expected a different block height");
+        assert_eq!(
+            block.time,
+            Utc.with_ymd_and_hms(2023, 10, 25, 10, 09, 34).unwrap(),
+            "expected a different block time",
+        );
     }
 
     #[test]
