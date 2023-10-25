@@ -1381,6 +1381,7 @@ dependencies = [
  "reqwest",
  "rstest",
  "serde_json",
+ "url",
 ]
 
 [[package]]

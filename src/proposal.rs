@@ -1,4 +1,6 @@
-use crate::{helper::UpgradeHelper, inputs::get_time_string, network::Network};
+use crate::{
+    helper::UpgradeHelper, inputs::get_time_string, network::Network,
+};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 
@@ -20,7 +22,7 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
         ),
         "estimated_time": get_time_string(helper.upgrade_time),
         "features": "- neue Features",
-        "height": 0, // TODO: get height from Mintscan?
+        "height": helper.upgrade_height,
         "name": helper.proposal_name,
         "network": format!("{}", helper.network), // TODO: implement serialize trait here?
         "previous_version": helper.previous_version,
