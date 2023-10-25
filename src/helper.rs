@@ -23,6 +23,7 @@ impl UpgradeHelper {
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
         let upgrade_height = get_estimated_height(network, upgrade_time);
+        println!("Estimated upgrade height: {}", upgrade_height);
 
         UpgradeHelper {
             network,
