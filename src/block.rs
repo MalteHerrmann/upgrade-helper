@@ -4,6 +4,8 @@ use chrono::{DateTime, TimeZone, Utc};
 use regex::Captures;
 use url::Url;
 
+const N_BLOCKS: u64 = 50_000;
+
 /// Represents a block from the Evmos network.
 #[derive(Debug)]
 pub struct Block {
@@ -14,9 +16,13 @@ pub struct Block {
 /// Gets the estimated block height for the given upgrade time.
 pub fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u64 {
     let block = get_latest_block(network);
-    let block_minus_n = get_block(network, block.height - 50_000);
+    let block_minus_n = get_block(network, block.height - N_BLOCKS);
+    let seconds_per_block: f32 = (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
 
-    block.height
+    let seconds_to_upgrade = (upgrade_time - block.time).num_seconds() as f32;
+    let blocks_to_upgrade = (seconds_to_upgrade / seconds_per_block) as u64;
+
+    blocks_to_upgrade + block.height
 }
 
 /// Gets the latest block from the Evmos network.
@@ -38,7 +44,7 @@ fn get_url(network: Network, endpoint: &str) -> Result<Url, url::ParseError> {
 fn get_block(network: Network, height: u64) -> Block {
     // Combine the REST endpoint with the block height
     let base_url = get_rest_provider(network);
-    let blocks_endpoint = "/blocks/";
+    let blocks_endpoint = "cosmos/base/tendermint/v1beta1/blocks/";
     let url = base_url
         .join(blocks_endpoint)
         .expect("the blocks endpoint should be valid")
@@ -101,7 +107,15 @@ fn process_block_body(body: String) -> Block {
 mod tests {
     use super::*;
     use crate::network::Network;
-    use chrono::TimeZone;
+    use chrono::{TimeZone, Days};
+
+    #[test]
+    fn test_get_estimated_height() {
+        let now = Utc::now();
+        let upgrade_time = now.checked_add_days(Days::new(5)).unwrap();
+        let height = get_estimated_height(Network::Mainnet, upgrade_time);
+        assert!(height > 16705125, "expected a different block height");
+    }
 
     #[test]
     fn test_get_latest_block_mainnet() {
@@ -121,7 +135,7 @@ mod tests {
         assert_eq!(block.height, 16705125, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2023, 10, 25, 10, 09, 34).unwrap(),
+            Utc.with_ymd_and_hms(2023, 10, 25, 17, 21, 50).unwrap(),
             "expected a different block time",
         );
     }
@@ -132,7 +146,7 @@ mod tests {
         assert_eq!(block.height, 18182953, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2023, 10, 25, 10, 09, 34).unwrap(),
+            Utc.with_ymd_and_hms(2023, 10, 25, 17, 22, 23).unwrap(),
             "expected a different block time",
         );
     }
