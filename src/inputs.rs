@@ -6,19 +6,8 @@ use inquire::{DateSelect, Select};
 use std::{ops::Add, process};
 
 const MONTHS: [&str; 13] = [
-    "",
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "Septemer",
-    "October",
-    "November",
-    "December",
+    "", "January", "February", "March", "April", "May", "June", "July", "August", "Septemer",
+    "October", "November", "December",
 ];
 
 /// Prompts the user to select the network type used.
@@ -135,7 +124,8 @@ pub fn is_valid_upgrade_time(upgrade_time: DateTime<Utc>) -> bool {
 /// Returns a string representation of the upgrade time.
 pub fn get_time_string(time: DateTime<Utc>) -> String {
     let (is_pm, hour) = time.hour12();
-    format!("{}{} {} on {}., {} {}., {}",
+    format!(
+        "{}{} {} on {}., {} {}., {}",
         hour,
         if is_pm { "PM" } else { "AM" },
         time.timezone(),

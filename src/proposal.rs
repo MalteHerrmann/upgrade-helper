@@ -1,4 +1,6 @@
-use crate::{block::get_estimated_height, helper::UpgradeHelper, inputs::get_time_string, network::Network};
+use crate::{
+    block::get_estimated_height, helper::UpgradeHelper, inputs::get_time_string, network::Network,
+};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 
@@ -20,7 +22,7 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
         ),
         "estimated_time": get_time_string(helper.upgrade_time),
         "features": "- neue Features",
-        "height": get_estimated_height(helper.upgrade_time),
+        "height": get_estimated_height(helper.network, helper.upgrade_time),
         "name": helper.proposal_name,
         "network": format!("{}", helper.network), // TODO: implement serialize trait here?
         "previous_version": helper.previous_version,
