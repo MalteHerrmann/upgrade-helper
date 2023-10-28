@@ -1,5 +1,5 @@
 extern crate reqwest;
-use crate::network::Network;
+use crate::{http::get, network::Network};
 use chrono::{DateTime, TimeZone, Utc};
 use regex::Captures;
 use url::Url;
@@ -28,8 +28,8 @@ pub fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u6
 /// Gets the latest block from the Evmos network.
 fn get_latest_block(network: Network) -> Block {
     let url = get_url(network, "cosmos/base/tendermint/v1beta1/blocks/latest").unwrap();
-    let response =
-        reqwest::blocking::get(url).expect("the latest block should be successfully queried");
+    let response = get(url)
+        .expect("the latest block should be successfully queried");
 
     process_block_body(response.text().unwrap())
 }
