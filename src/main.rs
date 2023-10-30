@@ -12,7 +12,7 @@ use helper::UpgradeHelper;
 use std::process;
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
-fn get_helper_from_inputs() -> UpgradeHelper {
+async fn get_helper_from_inputs() -> UpgradeHelper {
     // Query and check the network to use
     let used_network = inputs::get_used_network();
 
@@ -54,16 +54,17 @@ fn get_helper_from_inputs() -> UpgradeHelper {
         previous_version.as_str(),
         target_version.as_str(),
         upgrade_time,
-    )
+    ).await
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Create an instance of the helper
-    let upgrade_helper = get_helper_from_inputs();
+    let upgrade_helper = get_helper_from_inputs().await;
 
     // Validate the helper configuration
     upgrade_helper.validate();
 
     // Run the main functionality of the helper.
-    upgrade_helper.run();
+    upgrade_helper.run().await;
 }

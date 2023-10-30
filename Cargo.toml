@@ -9,8 +9,10 @@ edition = "2021"
 chrono = "0.4.31"
 handlebars = "4.4.0"
 inquire = { version = "0.6.2", features = ["date"] }
+octocrab = "0.31.2"
 regex = "1.10.2"
-reqwest = { version="0.11.22", features=["blocking"] }
+reqwest = "0.11.22"
 rstest = "0.18.2"
 serde_json = "1.0.107"
+tokio = { version = "1.33.0", features = ["full"] }
 url = "2.4.1"

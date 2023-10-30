@@ -14,9 +14,9 @@ pub struct Block {
 }
 
 /// Gets the estimated block height for the given upgrade time.
-pub fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u64 {
-    let block = get_latest_block(network);
-    let block_minus_n = get_block(network, block.height - N_BLOCKS);
+pub async fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u64 {
+    let block = get_latest_block(network).await;
+    let block_minus_n = get_block(network, block.height - N_BLOCKS).await;
     let seconds_per_block: f32 = (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
 
     let seconds_to_upgrade = (upgrade_time - block.time).num_seconds() as f32;
@@ -26,12 +26,13 @@ pub fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u6
 }
 
 /// Gets the latest block from the Evmos network.
-fn get_latest_block(network: Network) -> Block {
+async fn get_latest_block(network: Network) -> Block {
     let url = get_url(network, "cosmos/base/tendermint/v1beta1/blocks/latest").unwrap();
     let response = get(url)
+        .await
         .expect("the latest block should be successfully queried");
 
-    process_block_body(response.text().unwrap())
+    process_block_body(response.text().await.unwrap())
 }
 
 /// Builds the URL for the given REST endpoint.
@@ -41,7 +42,7 @@ fn get_url(network: Network, endpoint: &str) -> Result<Url, url::ParseError> {
 }
 
 /// Gets the block at the given height from the Evmos network.
-fn get_block(network: Network, height: u64) -> Block {
+async fn get_block(network: Network, height: u64) -> Block {
     // Combine the REST endpoint with the block height
     let base_url = get_rest_provider(network);
     let blocks_endpoint = "cosmos/base/tendermint/v1beta1/blocks/";
@@ -51,10 +52,11 @@ fn get_block(network: Network, height: u64) -> Block {
         .join(height.to_string().as_str())
         .expect("the blocks endpoint should be valid");
 
-    let response = reqwest::blocking::get(url)
+    let response = get(url)
+        .await
         .expect("the block should be successfully queried");
 
-    process_block_body(response.text().unwrap())
+    process_block_body(response.text().await.unwrap())
 }
 
 /// Returns the appropriate REST provider for the given network.
@@ -109,29 +111,29 @@ mod tests {
     use crate::network::Network;
     use chrono::{TimeZone, Days};
 
-    #[test]
-    fn test_get_estimated_height() {
+    #[tokio::test]
+    async fn test_get_estimated_height() {
         let now = Utc::now();
         let upgrade_time = now.checked_add_days(Days::new(5)).unwrap();
-        let height = get_estimated_height(Network::Mainnet, upgrade_time);
+        let height = get_estimated_height(Network::Mainnet, upgrade_time).await;
         assert!(height > 16705125, "expected a different block height");
     }
 
-    #[test]
-    fn test_get_latest_block_mainnet() {
-        let block = get_latest_block(Network::Mainnet);
+    #[tokio::test]
+    async fn test_get_latest_block_mainnet() {
+        let block = get_latest_block(Network::Mainnet).await;
         assert!(block.height > 0);
     }
 
-    #[test]
-    fn test_get_latest_block_testnet() {
-        let block = get_latest_block(Network::Testnet);
+    #[tokio::test]
+    async fn test_get_latest_block_testnet() {
+        let block = get_latest_block(Network::Testnet).await;
         assert!(block.height > 0);
     }
 
-    #[test]
-    fn test_get_block_mainnet() {
-        let block = get_block(Network::Mainnet, 16705125);
+    #[tokio::test]
+    async fn test_get_block_mainnet() {
+        let block = get_block(Network::Mainnet, 16705125).await;
         assert_eq!(block.height, 16705125, "expected a different block height");
         assert_eq!(
             block.time,
@@ -140,9 +142,9 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_get_block_testnet() {
-        let block = get_block(Network::Testnet, 18182953);
+    #[tokio::test]
+    async fn test_get_block_testnet() {
+        let block = get_block(Network::Testnet, 18182953).await;
         assert_eq!(block.height, 18182953, "expected a different block height");
         assert_eq!(
             block.time,
