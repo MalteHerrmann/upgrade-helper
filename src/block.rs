@@ -17,7 +17,8 @@ pub struct Block {
 pub async fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u64 {
     let block = get_latest_block(network).await;
     let block_minus_n = get_block(network, block.height - N_BLOCKS).await;
-    let seconds_per_block: f32 = (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
+    let seconds_per_block: f32 =
+        (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
 
     let seconds_to_upgrade = (upgrade_time - block.time).num_seconds() as f32;
     let blocks_to_upgrade = (seconds_to_upgrade / seconds_per_block) as u64;
@@ -109,7 +110,7 @@ fn process_block_body(body: String) -> Block {
 mod tests {
     use super::*;
     use crate::network::Network;
-    use chrono::{TimeZone, Days};
+    use chrono::{Days, TimeZone};
 
     #[tokio::test]
     async fn test_get_estimated_height() {

@@ -54,7 +54,8 @@ async fn get_helper_from_inputs() -> UpgradeHelper {
         previous_version.as_str(),
         target_version.as_str(),
         upgrade_time,
-    ).await
+    )
+    .await
 }
 
 #[tokio::main]
