@@ -74,7 +74,7 @@ fn get_rest_provider(network: Network) -> Url {
 /// Processes the block body.
 fn process_block_body(body: String) -> Block {
     // build regex to find the block height
-    let re = regex::Regex::new(r#"height\":\"(\d+)\",\"time\":\"([T0-9\-\:]+)"#).unwrap();
+    let re = regex::Regex::new(r#"height":"(\d+)","time":"([T0-9\-:]+)"#).unwrap();
 
     let captures: Captures;
     let captures_res = re.captures(&body);
