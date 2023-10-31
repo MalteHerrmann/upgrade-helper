@@ -14,7 +14,7 @@ pub struct UpgradeHelper {
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
-    pub fn new(
+    pub async fn new(
         network: Network,
         previous_version: &str,
         target_version: &str,
@@ -22,7 +22,7 @@ impl UpgradeHelper {
     ) -> UpgradeHelper {
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
-        let upgrade_height = get_estimated_height(network, upgrade_time);
+        let upgrade_height = get_estimated_height(network, upgrade_time).await;
         println!("Estimated upgrade height: {}", upgrade_height);
 
         UpgradeHelper {
@@ -67,10 +67,10 @@ impl UpgradeHelper {
     }
 
     /// Runs the main logic of the upgrade helper.
-    pub fn run(&self) {
+    pub async fn run(&self) {
         // Check if release was already created
         let release_exists = release::check_release_exists(self.target_version.as_str());
-        println!("Release exists: {}", release_exists.unwrap());
+        println!("Release exists: {}", release_exists.await);
 
         // Prepare proposal
         let proposal: String;
