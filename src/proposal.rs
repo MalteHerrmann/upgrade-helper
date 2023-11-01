@@ -1,4 +1,4 @@
-use crate::{helper::UpgradeHelper, inputs::get_time_string, network::Network};
+use crate::{block::N_BLOCKS, helper::UpgradeHelper, inputs::get_time_string, network::Network};
 use handlebars::{Handlebars, RenderError};
 use num_format::ToFormattedString;
 use serde_json::json;
@@ -14,6 +14,7 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
         .unwrap();
 
     let height_link = get_height_with_link(helper.network, helper.upgrade_height);
+    let n_blocks = N_BLOCKS.to_formatted_string(&num_format::Locale::en);
 
     let data = json!({
         "author": "Malte Herrmann, Evmos Core Team",
@@ -25,6 +26,7 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
         "features": "- neue Features",
         "height": height_link,
         "name": helper.proposal_name,
+        "n_blocks": n_blocks,
         "network": format!("{}", helper.network), // TODO: implement serialize trait here?
         "previous_version": get_release_md_link(helper.previous_version.as_str()),
         "version": get_release_md_link(helper.target_version.as_str()),
