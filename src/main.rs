@@ -1,5 +1,6 @@
 mod block;
 mod helper;
+mod features;
 mod http;
 mod inputs;
 mod network;
