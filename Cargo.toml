@@ -9,6 +9,7 @@ edition = "2021"
 chrono = "0.4.31"
 handlebars = "4.4.0"
 inquire = { version = "0.6.2", features = ["date"] }
+num-format = "0.4.4"
 octocrab = "0.31.2"
 regex = "1.10.2"
 reqwest = "0.11.22"

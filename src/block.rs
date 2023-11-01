@@ -4,7 +4,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use regex::Captures;
 use url::Url;
 
-const N_BLOCKS: u64 = 50_000;
+pub const N_BLOCKS: u64 = 50_000;
 
 /// Represents a block from the Evmos network.
 #[derive(Debug)]
