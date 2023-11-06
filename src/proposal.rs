@@ -50,15 +50,27 @@ pub fn write_proposal_to_file(
 fn get_height_with_link(network: Network, height: u64) -> String {
     let height_with_commas = height.to_formatted_string(&num_format::Locale::en);
     match network {
-        Network::LocalNode => format!("[{}](https://www.mintscan.io/evmos/blocks/{})", height_with_commas, height),
-        Network::Mainnet => format!("[{}](https://www.mintscan.io/evmos/blocks/{})", height_with_commas, height),
-        Network::Testnet => format!("[{}](https://testnet.mintscan.io/evmos-testnet/blocks/{})", height_with_commas, height),
+        Network::LocalNode => format!(
+            "[{}](https://www.mintscan.io/evmos/blocks/{})",
+            height_with_commas, height
+        ),
+        Network::Mainnet => format!(
+            "[{}](https://www.mintscan.io/evmos/blocks/{})",
+            height_with_commas, height
+        ),
+        Network::Testnet => format!(
+            "[{}](https://testnet.mintscan.io/evmos-testnet/blocks/{})",
+            height_with_commas, height
+        ),
     }
 }
 
 /// Returns the appropriate Markdown link to the release on GitHub for the given version.
 fn get_release_md_link(version: &str) -> String {
-    format!("[{0}](https://github.com/evmos/evmos/releases/tag/{0})", version)
+    format!(
+        "[{0}](https://github.com/evmos/evmos/releases/tag/{0})",
+        version
+    )
 }
 
 #[cfg(test)]
