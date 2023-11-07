@@ -1,9 +1,8 @@
 use std::process;
 use handlebars::{Handlebars, RenderError};
-use octocrab::models::repos::Release;
 use serde_json::json;
 use crate::helper::UpgradeHelper;
-use crate::release::get_release;
+use crate::release::{get_asset_string, get_release};
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
 pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderError> {
@@ -23,7 +22,7 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         }
     };
 
-    let assets = "TODO: assets";
+    let assets = get_asset_string(&release).await;
     let description = "TODO: description";
     let fees = "TODO: fees";
     let key = "TODO: key";
@@ -54,7 +53,7 @@ mod tests {
     #[tokio::test]
     async fn test_prepare_command() {
         let helper= UpgradeHelper::new(
-            Network::LocalNode,
+            Network::Testnet,
             "v13.0.0",
             "v14.0.0",
             Utc::now(),
