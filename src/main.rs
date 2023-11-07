@@ -1,4 +1,5 @@
 mod block;
+mod command;
 mod helper;
 mod http;
 mod inputs;
