@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
 use crate::{block::get_estimated_height, inputs, network::Network, proposal, release, version};
 use chrono::{DateTime, Duration, Utc};
+use std::path::{Path, PathBuf};
 use std::{fs, process};
 
 pub struct UpgradeHelper {
@@ -75,7 +75,13 @@ impl UpgradeHelper {
         // Check if home folder exists
         let exists = path_exists(&self.home);
         if !exists {
-            println!("Home folder does not exist: {}", &self.home.to_str().expect("Failed to convert home path to string"));
+            println!(
+                "Home folder does not exist: {}",
+                &self
+                    .home
+                    .to_str()
+                    .expect("Failed to convert home path to string")
+            );
             process::exit(1);
         }
 
@@ -131,7 +137,11 @@ fn path_exists(path: &Path) -> bool {
     }
 
     let metadata = res.unwrap();
-    if metadata.is_dir() || metadata.is_file() { true } else { false }
+    if metadata.is_dir() || metadata.is_file() {
+        true
+    } else {
+        false
+    }
 }
 
 #[cfg(test)]
@@ -165,9 +175,9 @@ fn get_home(network: Network) -> PathBuf {
     // home dir of user
     let mut user_home = dirs::home_dir().expect("Failed to get home directory");
     match network {
-        Network::LocalNode => {user_home.push(".tmp-evmosd")},
-        Network::Testnet => {user_home.push(".evmosd")},
-        Network::Mainnet => {user_home.push(".evmosd")}
+        Network::LocalNode => user_home.push(".tmp-evmosd"),
+        Network::Testnet => user_home.push(".evmosd"),
+        Network::Mainnet => user_home.push(".evmosd"),
     }
     user_home
 }
