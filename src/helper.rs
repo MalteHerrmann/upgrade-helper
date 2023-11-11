@@ -1,4 +1,4 @@
-use crate::{block::get_estimated_height, inputs, network::Network, proposal, release, version};
+use crate::{block::get_estimated_height, command, inputs, network::Network, proposal, release, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, process};
@@ -123,6 +123,21 @@ impl UpgradeHelper {
                 process::exit(1);
             }
         }
+
+        // Prepare command to submit proposal
+        let command: String;
+        let command_res = command::prepare_command(&self).await;
+        match command_res {
+            Ok(contents) => {
+                command = contents;
+            }
+            Err(e) => {
+                println!("Error preparing command: {}", e);
+                process::exit(1);
+            }
+        }
+
+        print!("Command: {}\n\n", command);
     }
 }
 
