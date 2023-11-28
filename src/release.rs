@@ -3,6 +3,7 @@ use octocrab::{
     models::repos::{Asset, Release},
     Result,
 };
+use serde_json::Value;
 use std::collections::HashMap;
 
 /// Sends a HTTP request to the GitHub release page and returns the response.
@@ -28,11 +29,10 @@ pub async fn check_release_exists(version: &str) -> bool {
 /// Returns the asset string for the release assets.
 /// The asset string is used in the Evmos CLI command.
 pub async fn get_asset_string(release: &Release) -> Option<String> {
-    let checksums = get_checksum_map(release.assets.clone()).await;
-
-    match checksums {
-        Some(checksums) => {
-            println!("checksum: {:?}", checksums);
+    let checksums: HashMap<String, String>;
+    match get_checksum_map(release.assets.clone()).await {
+        Some(returned_checksums) => {
+            checksums = returned_checksums;
         }
         None => {
             println!("checksum.txt not found in release assets");
@@ -40,26 +40,47 @@ pub async fn get_asset_string(release: &Release) -> Option<String> {
         }
     }
 
-    let mut assets = String::new();
-    for asset in &release.assets {
-        println!("asset name: {}", asset.name);
-        let key = match get_os_key_from_asset_name(&asset.name) {
-            Some(key) => key,
+    let assets = build_assets_json(release, checksums)?;
+    Some(assets.to_string())
+}
+
+/// Builds the assets JSON object.
+fn build_assets_json(
+    release: &Release,
+    checksums: HashMap<String, String>,
+) -> Option<Value> {
+    let mut assets = serde_json::json!({
+        "binaries": {}
+    });
+
+    for asset in release.assets.clone() {
+        let os_key = get_os_key_from_asset_name(&asset.name)?;
+
+        let checksum = match checksums.get(&asset.name) {
+            Some(checksum) => checksum,
             None => {
-                println!("Failed to get OS key from asset name");
+                println!("Checksum not found for asset {}", asset.name);
                 continue;
             }
         };
-        println!("key: {}", key);
 
-        assets.push_str(&format!("{} ", asset.name));
+        let url = format!("{}?checksum={}", asset.browser_download_url, checksum);
+
+        insert_into_assets(&mut assets, os_key, url);
     }
 
     Some(assets)
 }
 
+/// Inserts a new key value pair into the assets binaries.
+/// The key is the OS key and the value is the download URL.
+fn insert_into_assets(assets: &mut Value, key: String, url: String) {
+    let binaries = assets["binaries"].as_object_mut().unwrap();
+    binaries.insert(key, serde_json::json!(url));
+}
+
 /// Returns the checksum from the release assets.
-fn get_checksum_from_assets(assets: &[octocrab::models::repos::Asset]) -> Option<&Asset> {
+fn get_checksum_from_assets(assets: &[Asset]) -> Option<&Asset> {
     // TODO: improve handling here? use getter?
     for asset in assets {
         if asset.name == "checksums.txt" {
@@ -73,18 +94,15 @@ fn get_checksum_from_assets(assets: &[octocrab::models::repos::Asset]) -> Option
 /// Returns the OS key from the asset name.
 fn get_os_key_from_asset_name(name: &str) -> Option<String> {
     // Check for regex (Linux|Darwin)_(amd64|arm64).tar.gz and store os and arch in variables
-    let re = regex::Regex::new(r"(Linux|Darwin)_(amd64|arm64)");
-    match re {
+    return match regex::Regex::new(r"(Linux|Darwin)_(amd64|arm64)") {
         Ok(re) => {
             let captures = re.captures(name)?;
-            let os = captures.get(1).map_or("", |m| m.as_str());
-            let arch = captures.get(2).map_or("", |m| m.as_str());
+            let os = captures.get(1)?.as_str().to_ascii_lowercase();
+            let arch = captures.get(2)?.as_str();
 
-            let os_lower = os.to_ascii_lowercase();
-
-            return Some(format!("{os_lower}/{arch}"));
+            Some(format!("{os}/{arch}"))
         }
-        Err(_) => return None,
+        Err(_) => None,
     }
 }
 
