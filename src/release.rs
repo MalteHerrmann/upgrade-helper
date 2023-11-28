@@ -134,7 +134,10 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Option<HashMap<String, String>>
 
             return Some(checksums);
         }
-        Err(_) => return None,
+        Err(_) => {
+            println!("Failed to download checksum file");
+            return None
+        },
     }
 }
 

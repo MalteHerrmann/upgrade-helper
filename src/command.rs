@@ -24,8 +24,8 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
     };
 
     let assets = match get_asset_string(&release).await {
-        Ok(assets) => assets,
-        Err(_) => {
+        Some(assets) => assets,
+        None => {
             println!("Could not generate asset string for release {}.", helper.target_version);
             process::exit(1);
         }
@@ -86,7 +86,7 @@ mod tests {
             .await
             .expect("Failed to prepare command");
 
-        let expected_command = format!("evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 --title \"Evmos Testnet v14.0.0 Upgrade\" --upgrade-height 1000 --description \"This is a test proposal.\" --from testnet-address --keyring-backend test --chain-id evmos_9000-1 --home {}/.tmp-evmosd --fees 10000000aevmos --node https://tm.evmos-testnet.lava.build:26657", helper.home.as_os_str().to_str().unwrap());
+        let expected_command = format!("evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 --description \"This is a test proposal.\" --upgrade-height 1000 --from testnet-address --keyring-backend test --chain-id evmos_9000-1 --home {}/.tmp-evmosd --fees 10000000aevmos --node https://tm.evmos-testnet.lava.build:26657", helper.home.as_os_str().to_str().unwrap());
         assert_eq!(command, expected_command, "command does not match");
     }
 
