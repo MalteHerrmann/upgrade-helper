@@ -110,7 +110,7 @@ fn get_os_key_from_asset_name(name: &str) -> Option<String> {
 async fn get_checksum_map(assets: Vec<Asset>) -> Option<HashMap<String, String>> {
     let checksum = get_checksum_from_assets(assets.as_slice())?;
 
-    match get(checksum.browser_download_url.clone()).await {
+    return match get(checksum.browser_download_url.clone()).await {
         Ok(response) => {
             let body = response.text().await.unwrap();
             let mut checksums = HashMap::new();
@@ -132,11 +132,11 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Option<HashMap<String, String>>
                 checksums.insert(parts[1].to_string(), parts[0].to_string());
             }
 
-            return Some(checksums);
+            Some(checksums)
         }
         Err(_) => {
             println!("Failed to download checksum file");
-            return None
+            None
         },
     }
 }
