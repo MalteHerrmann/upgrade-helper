@@ -32,6 +32,7 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
     };
 
 
+    // TODO: get description from md file
     let description = "This is a test proposal.";
     // TODO: get fees from network conditions?
     let fees = "10000000000aevmos";
