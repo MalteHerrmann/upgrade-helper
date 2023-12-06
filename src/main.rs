@@ -61,12 +61,18 @@ async fn get_helper_from_inputs() -> UpgradeHelper {
 
 #[tokio::main]
 async fn main() {
-    // Create an instance of the helper
-    let upgrade_helper = get_helper_from_inputs().await;
+    // if the first argument is "proposal", run the proposal command
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() == 2 && (args[1] == "proposal" || args[1] == "command") {
+        // Create an instance of the helper
+        let upgrade_helper = get_helper_from_inputs().await;
 
-    // Validate the helper configuration
-    upgrade_helper.validate();
+        // Validate the helper configuration
+        upgrade_helper.validate();
 
-    // Run the main functionality of the helper.
-    upgrade_helper.run().await;
+        // Run the main functionality of the helper.
+        upgrade_helper.run().await;
+    } else {
+        println!("Possible usage:\n  - upgrade-helper proposal\n  - upgrade-helper command\n")
+    }
 }

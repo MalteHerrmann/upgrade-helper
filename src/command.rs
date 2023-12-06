@@ -3,16 +3,17 @@ use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
-use std::process;
+use std::{io, process};
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
 pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderError> {
-    let mut handlebars = Handlebars::new();
-    handlebars.set_strict_mode(true);
-
-    handlebars
-        .register_template_file("command", "src/templates/command.hbs")
-        .unwrap();
+    let description = match get_description_from_md(&helper.proposal_file_name) {
+        Ok(description) => description,
+        Err(e) => {
+            println!("Error reading proposal file: {}", e);
+            process::exit(1);
+        }
+    };
 
     let res = get_release(helper.target_version.as_str()).await;
     let release = match res {
@@ -34,8 +35,6 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         }
     };
 
-    // TODO: get description from md file
-    let description = get_description_from_md(&helper.proposal_file_name);
     // TODO: get fees from network conditions?
     let fees = "10000000000aevmos";
     let key = get_key(helper.network);
@@ -54,14 +53,19 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         "version": helper.target_version,
     });
 
+    let mut handlebars = Handlebars::new();
+    handlebars.set_strict_mode(true);
+
+    handlebars
+        .register_template_file("command", "src/templates/command.hbs")
+        .expect("Failed to register template file");
+
     handlebars.render("command", &data)
 }
 
-/// Returns the joined description string from the given Markdown file.
-fn get_description_from_md(filename: &str) -> String {
-    println!("{}", filename);
-
-    "".to_string()
+/// Returns the description string from the given Markdown file.
+fn get_description_from_md(filename: &str) -> io::Result<String> {
+    std::fs::read_to_string(filename)
 }
 
 /// Returns the key used for signing based on the network.
@@ -98,6 +102,26 @@ mod tests {
 
         let expected_command = format!("evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 --description \"This is a test proposal.\" --upgrade-height 1000 --from testnet-address --keyring-backend test --chain-id evmos_9000-1 --home {}/.tmp-evmosd --fees 10000000aevmos --node https://tm.evmos-testnet.lava.build:26657", helper.home.as_os_str().to_str().unwrap());
         assert_eq!(command, expected_command, "command does not match");
+    }
+
+    #[test]
+    fn test_get_description_from_md() {
+        let description = get_description_from_md("src/templates/command.hbs");
+        assert_eq!(
+            description.is_ok(),
+            true,
+            "description should be ok, but is not"
+        );
+    }
+
+    #[test]
+    fn test_get_description_from_md_invalid_file() {
+        let description = get_description_from_md("src/templates/command.hbs.invalid");
+        assert_eq!(
+            description.is_err(),
+            true,
+            "description should be err, but is not"
+        );
     }
 
     #[test]
