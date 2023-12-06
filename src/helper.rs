@@ -1,6 +1,4 @@
-use crate::{
-    block::get_estimated_height, command, inputs, network::Network, proposal, release, version,
-};
+use crate::{block::get_estimated_height, inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, process};
@@ -91,55 +89,6 @@ impl UpgradeHelper {
         }
 
         println!("Upgrade configuration is valid")
-    }
-
-    /// Runs the main logic of the upgrade helper.
-    pub async fn run(&self) {
-        // Prepare proposal
-        let proposal: String;
-        let proposal_res = proposal::prepare_proposal(&self);
-        match proposal_res {
-            Ok(contents) => {
-                proposal = contents;
-            }
-            Err(e) => {
-                println!("Error preparing proposal: {}", e);
-                process::exit(1);
-            }
-        }
-
-        // Write proposal to file
-        let write_res =
-            proposal::write_proposal_to_file(proposal.as_str(), self.proposal_file_name.as_str());
-        match write_res {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Error writing proposal to file: {}", e);
-                process::exit(1);
-            }
-        }
-
-        // Check if release was already created
-        let release_exists = release::check_release_exists(self.target_version.as_str());
-        if !release_exists.await {
-            println!("Release {} does not exist yet.", self.target_version);
-            process::exit(1);
-        }
-
-        // Prepare command to submit proposal
-        let command: String;
-        let command_res = command::prepare_command(&self).await;
-        match command_res {
-            Ok(contents) => {
-                command = contents;
-            }
-            Err(e) => {
-                println!("Error preparing command: {}", e);
-                process::exit(1);
-            }
-        }
-
-        print!("Command: {}\n\n", command);
     }
 }
 
