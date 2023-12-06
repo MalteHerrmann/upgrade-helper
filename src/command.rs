@@ -1,9 +1,9 @@
 use crate::helper::UpgradeHelper;
+use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 use std::process;
-use crate::network::Network;
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
 pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderError> {
@@ -26,14 +26,16 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
     let assets = match get_asset_string(&release).await {
         Some(assets) => assets,
         None => {
-            println!("Could not generate asset string for release {}.", helper.target_version);
+            println!(
+                "Could not generate asset string for release {}.",
+                helper.target_version
+            );
             process::exit(1);
         }
     };
 
-
     // TODO: get description from md file
-    let description = "This is a test proposal.";
+    let description = get_description_from_md(&helper.proposal_file_name);
     // TODO: get fees from network conditions?
     let fees = "10000000000aevmos";
     let key = get_key(helper.network);
@@ -53,6 +55,13 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
     });
 
     handlebars.render("command", &data)
+}
+
+/// Returns the joined description string from the given Markdown file.
+fn get_description_from_md(filename: &str) -> String {
+    println!("{}", filename);
+
+    "".to_string()
 }
 
 /// Returns the key used for signing based on the network.
@@ -106,10 +115,16 @@ mod tests {
     #[test]
     fn test_get_rpc_url() {
         let rpc = get_rpc_url(Network::Mainnet);
-        assert_eq!(rpc, "https://tm.evmos.lava.build:26657", "rpc does not match");
+        assert_eq!(
+            rpc, "https://tm.evmos.lava.build:26657",
+            "rpc does not match"
+        );
 
         let rpc = get_rpc_url(Network::Testnet);
-        assert_eq!(rpc, "https://tm.evmos-testnet.lava.build:26657", "rpc does not match");
+        assert_eq!(
+            rpc, "https://tm.evmos-testnet.lava.build:26657",
+            "rpc does not match"
+        );
 
         let rpc = get_rpc_url(Network::LocalNode);
         assert_eq!(rpc, "http://localhost:26657", "rpc does not match");

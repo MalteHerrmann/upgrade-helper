@@ -1,4 +1,6 @@
-use crate::{block::get_estimated_height, command, inputs, network::Network, proposal, release, version};
+use crate::{
+    block::get_estimated_height, command, inputs, network::Network, proposal, release, version,
+};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, process};
@@ -9,6 +11,7 @@ pub struct UpgradeHelper {
     pub network: Network,
     pub previous_version: String,
     pub proposal_name: String,
+    pub proposal_file_name: String,
     pub target_version: String,
     pub upgrade_height: u64,
     pub upgrade_time: DateTime<Utc>,
@@ -31,6 +34,7 @@ impl UpgradeHelper {
         let voting_period = get_voting_period(network);
         let upgrade_height = get_estimated_height(network, upgrade_time).await;
         println!("Estimated upgrade height: {}", upgrade_height);
+        let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
 
         UpgradeHelper {
             chain_id,
@@ -38,6 +42,7 @@ impl UpgradeHelper {
             network,
             previous_version: previous_version.to_string(),
             proposal_name,
+            proposal_file_name,
             target_version: target_version.to_string(),
             upgrade_height,
             upgrade_time,
@@ -90,13 +95,6 @@ impl UpgradeHelper {
 
     /// Runs the main logic of the upgrade helper.
     pub async fn run(&self) {
-        // Check if release was already created
-        let release_exists = release::check_release_exists(self.target_version.as_str());
-        if !release_exists.await {
-            println!("Release {} does not exist yet.", self.target_version);
-            process::exit(1);
-        }
-
         // Prepare proposal
         let proposal: String;
         let proposal_res = proposal::prepare_proposal(&self);
@@ -111,17 +109,21 @@ impl UpgradeHelper {
         }
 
         // Write proposal to file
-        let write_res = proposal::write_proposal_to_file(
-            proposal.as_str(),
-            self.network,
-            self.target_version.as_str(),
-        );
+        let write_res =
+            proposal::write_proposal_to_file(proposal.as_str(), self.proposal_file_name.as_str());
         match write_res {
             Ok(_) => {}
             Err(e) => {
                 println!("Error writing proposal to file: {}", e);
                 process::exit(1);
             }
+        }
+
+        // Check if release was already created
+        let release_exists = release::check_release_exists(self.target_version.as_str());
+        if !release_exists.await {
+            println!("Release {} does not exist yet.", self.target_version);
+            process::exit(1);
         }
 
         // Prepare command to submit proposal

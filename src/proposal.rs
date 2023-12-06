@@ -39,10 +39,8 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
 /// Writes the proposal contents to a file.
 pub fn write_proposal_to_file(
     proposal: &str,
-    network: Network,
-    target_version: &str,
+    proposal_file_name: &str,
 ) -> Result<(), std::io::Error> {
-    let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
     std::fs::write(proposal_file_name, proposal)
 }
 
@@ -92,7 +90,8 @@ mod tests {
 
     #[test]
     fn test_write_proposal_to_file_pass() {
-        let result = write_proposal_to_file("test", Network::Mainnet, "v0.1.0");
+        let proposal_file_name = format!("proposal-{}-{}.md", Network::Mainnet, "v0.1.0");
+        let result = write_proposal_to_file("test", proposal_file_name.as_str());
         assert!(
             result.is_ok(),
             "Error writing proposal to file: {}",
@@ -100,7 +99,6 @@ mod tests {
         );
 
         // Check that file exists
-        let proposal_file_name = format!("proposal-{}-{}.md", Network::Mainnet, "v0.1.0");
         assert!(
             std::path::Path::new(proposal_file_name.as_str()).exists(),
             "Proposal file does not exist",
