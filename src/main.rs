@@ -8,7 +8,7 @@ mod proposal;
 mod release;
 mod version;
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use helper::UpgradeHelper;
 use std::process;
 
