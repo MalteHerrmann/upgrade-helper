@@ -1,10 +1,12 @@
-use crate::{helper::UpgradeHelper, inputs::get_time_string, network::Network};
+use crate::{features, helper::UpgradeHelper, inputs::get_time_string, network::Network};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
 
 /// Prepares the proposal text by filling in the necessary information
 /// to the proposal template.
-pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
+pub async fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
+    let features = features::adjust_features().await.unwrap();
+
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
 
@@ -50,7 +52,7 @@ mod tests {
     async fn test_prepare_proposal_pass() {
         let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now()).await;
 
-        let result = prepare_proposal(&helper);
+        let result = prepare_proposal(&helper).await;
         assert!(
             result.is_ok(),
             "Error rendering proposal: {}",

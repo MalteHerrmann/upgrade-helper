@@ -69,12 +69,12 @@ impl UpgradeHelper {
     /// Runs the main logic of the upgrade helper.
     pub async fn run(&self) {
         // Check if release was already created
-        let release_exists = release::check_release_exists(self.target_version.as_str());
-        println!("Release exists: {}", release_exists.await);
+        let release_exists = release::check_release_exists(self.target_version.as_str()).await;
+        println!("Release exists: {}", release_exists);
 
         // Prepare proposal
         let proposal: String;
-        let proposal_res = proposal::prepare_proposal(&self);
+        let proposal_res = proposal::prepare_proposal(&self).await;
         match proposal_res {
             Ok(contents) => {
                 proposal = contents;
