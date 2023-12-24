@@ -3,16 +3,27 @@ use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, process};
 
+/// Contains all relevant information for the scheduled upgrade.
 pub struct UpgradeHelper {
+    /// The chain ID of the node.
     pub chain_id: String,
+    /// The home directory of the node.
     pub home: PathBuf,
+    /// The network to create the commands and proposal description for.
     pub network: Network,
+    /// The previous version to upgrade from.
     pub previous_version: String,
+    /// The name of the proposal.
     pub proposal_name: String,
+    /// The name of the proposal file.
     pub proposal_file_name: String,
+    /// The target version to upgrade to.
     pub target_version: String,
+    /// The scheduled height of the upgrade.
     pub upgrade_height: u64,
+    /// The scheduled time of the upgrade.
     pub upgrade_time: DateTime<Utc>,
+    /// The voting period duration.
     pub voting_period: Duration,
 }
 
