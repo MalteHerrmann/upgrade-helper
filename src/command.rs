@@ -3,15 +3,15 @@ use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
 use handlebars::{Handlebars, RenderError};
 use serde_json::json;
-use std::{io, process};
+use std::io;
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
 pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderError> {
     let description = match get_description_from_md(&helper.proposal_file_name) {
-        Ok(description) => description,
+        Ok(d) => d,
         Err(e) => {
             println!("Error reading proposal file: {}", e);
-            process::exit(1);
+            return Err(RenderError::from(e));
         }
     };
 
@@ -20,18 +20,18 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         Ok(release) => release,
         Err(_) => {
             println!("Release {} does not exist yet.", helper.target_version);
-            process::exit(1);
+            return Err(RenderError::new("release does not exist yet"));
         }
     };
 
     let assets = match get_asset_string(&release).await {
         Some(assets) => assets,
         None => {
-            println!(
-                "Could not generate asset string for release {}.",
-                helper.target_version
-            );
-            process::exit(1);
+            return Err(RenderError::new(
+                format!("could not generate asset string for release {}",
+                    helper.target_version,
+                )
+            ));
         }
     };
 
@@ -52,6 +52,9 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         "tm_rpc": tm_rpc,
         "version": helper.target_version,
     });
+
+    // TODO: print data JSON to file and then read as configuration
+    println!("{}", data);
 
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
@@ -96,12 +99,36 @@ mod tests {
     async fn test_prepare_command() {
         let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now()).await;
 
-        let command = prepare_command(&helper)
-            .await
-            .expect("Failed to prepare command");
+        // Write description to file
+        let description = "This is a test proposal.";
+        std::fs::write(&helper.proposal_file_name, description).expect("Unable to write proposal to file");
 
-        let expected_command = format!("evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 --description \"This is a test proposal.\" --upgrade-height 1000 --from testnet-address --keyring-backend test --chain-id evmos_9000-1 --home {}/.tmp-evmosd --fees 10000000aevmos --node https://tm.evmos-testnet.lava.build:26657", helper.home.as_os_str().to_str().unwrap());
-        assert_eq!(command, expected_command, "command does not match");
+        match prepare_command(&helper).await {
+            Ok(command) => {
+                // Remove description file
+                std::fs::remove_file(&helper.proposal_file_name)
+                    .expect("failed to remove description file after test");
+
+                let mut expected_command = "evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 \\\n".to_owned();
+                expected_command.push_str("--title \"Evmos Testnet v14.0.0 Upgrade\" \\\n");
+                expected_command.push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
+                expected_command.push_str("--description \"This is a test proposal.\" \\\n");
+                expected_command.push_str("--from testnet-address \\\n");
+                expected_command.push_str("--fees 10000000aevmos \\\n");
+                expected_command.push_str("--chain-id evmos_9000-4 \\\n");
+                expected_command.push_str(format!("--home {} \\\n", helper.home.as_os_str().to_str().expect("failed to get home directory as str")).as_str());
+                expected_command.push_str("--node https://tm.evmos-testnet.lava.build:26657 \\\n");
+                expected_command.push_str("--upgrade-info \\\n");
+                expected_command.push_str("-b sync");
+                assert_eq!(command, expected_command, "expected different proposal command");
+            }
+            Err(e) => {
+                // Remove description file
+                std::fs::remove_file(&helper.proposal_file_name)
+                    .expect("failed to remove description file after test");
+                assert!(false, "unexpected error while preparing command: {}", e);
+            }
+        }
     }
 
     #[test]

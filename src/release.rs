@@ -45,16 +45,19 @@ pub async fn get_asset_string(release: &Release) -> Option<String> {
 }
 
 /// Builds the assets JSON object.
-fn build_assets_json(
-    release: &Release,
-    checksums: HashMap<String, String>,
-) -> Option<Value> {
+fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> Option<Value> {
     let mut assets = serde_json::json!({
         "binaries": {}
     });
 
     for asset in release.assets.clone() {
-        let os_key = get_os_key_from_asset_name(&asset.name)?;
+        let os_key = match get_os_key_from_asset_name(&asset.name) {
+            Some(key) => key,
+            None => {
+                println!("OS key not found for asset {}", asset.name);
+                continue;
+            }
+        };
 
         let checksum = match checksums.get(&asset.name) {
             Some(checksum) => checksum,
@@ -102,8 +105,11 @@ fn get_os_key_from_asset_name(name: &str) -> Option<String> {
 
             Some(format!("{os}/{arch}"))
         }
-        Err(_) => None,
-    }
+        Err(_) => {
+            println!("no key found for asset: {}", name);
+            None
+        }
+    };
 }
 
 /// Downloads the checksum file from the release assets and returns the built checksum string.
@@ -137,8 +143,8 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Option<HashMap<String, String>>
         Err(_) => {
             println!("Failed to download checksum file");
             None
-        },
-    }
+        }
+    };
 }
 
 #[cfg(test)]

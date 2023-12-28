@@ -1,7 +1,6 @@
 evmosd tx gov submit-legacy-proposal software-upgrade {{version}} \
 --title "{{title}}" \
 --upgrade-height {{height}} \
---upgrade-info '{{assets}}' \
 --description "{{description}}" \
 --from {{key}} \
 --fees {{fees}} \
@@ -9,4 +8,5 @@ evmosd tx gov submit-legacy-proposal software-upgrade {{version}} \
 --chain-id {{chain_id}} \
 --home {{home}} \
 --node {{tm_rpc}} \
+--upgrade-info '{{assets}}' \
 -b sync
