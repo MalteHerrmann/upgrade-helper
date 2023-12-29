@@ -10,7 +10,10 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
     let description = match get_description_from_md(&helper.proposal_file_name) {
         Ok(d) => d,
         Err(e) => {
-            println!("Error reading proposal file: {}", e);
+            println!(
+                "failed to read proposal file '{}': {}\n\n!!! ATTENTION !!!\nMake sure to generate the file using the corresponding CLI command first.\n",
+                &helper.proposal_file_name, e
+            );
             return Err(RenderError::from(e));
         }
     };
@@ -27,11 +30,10 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
     let assets = match get_asset_string(&release).await {
         Some(assets) => assets,
         None => {
-            return Err(RenderError::new(
-                format!("could not generate asset string for release {}",
-                    helper.target_version,
-                )
-            ));
+            return Err(RenderError::new(format!(
+                "could not generate asset string for release {}",
+                helper.target_version,
+            )));
         }
     };
 
@@ -101,7 +103,8 @@ mod tests {
 
         // Write description to file
         let description = "This is a test proposal.";
-        std::fs::write(&helper.proposal_file_name, description).expect("Unable to write proposal to file");
+        std::fs::write(&helper.proposal_file_name, description)
+            .expect("Unable to write proposal to file");
 
         match prepare_command(&helper).await {
             Ok(command) => {
@@ -109,18 +112,33 @@ mod tests {
                 std::fs::remove_file(&helper.proposal_file_name)
                     .expect("failed to remove description file after test");
 
-                let mut expected_command = "evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 \\\n".to_owned();
+                let mut expected_command =
+                    "evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 \\\n".to_owned();
                 expected_command.push_str("--title \"Evmos Testnet v14.0.0 Upgrade\" \\\n");
-                expected_command.push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
+                expected_command
+                    .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
                 expected_command.push_str("--description \"This is a test proposal.\" \\\n");
                 expected_command.push_str("--from testnet-address \\\n");
                 expected_command.push_str("--fees 10000000aevmos \\\n");
                 expected_command.push_str("--chain-id evmos_9000-4 \\\n");
-                expected_command.push_str(format!("--home {} \\\n", helper.home.as_os_str().to_str().expect("failed to get home directory as str")).as_str());
+                expected_command.push_str(
+                    format!(
+                        "--home {} \\\n",
+                        helper
+                            .home
+                            .as_os_str()
+                            .to_str()
+                            .expect("failed to get home directory as str")
+                    )
+                    .as_str(),
+                );
                 expected_command.push_str("--node https://tm.evmos-testnet.lava.build:26657 \\\n");
                 expected_command.push_str("--upgrade-info \\\n");
                 expected_command.push_str("-b sync");
-                assert_eq!(command, expected_command, "expected different proposal command");
+                assert_eq!(
+                    command, expected_command,
+                    "expected different proposal command"
+                );
             }
             Err(e) => {
                 // Remove description file

@@ -76,21 +76,23 @@ async fn run_command_preparation(helper: &UpgradeHelper) {
     let command = match command::prepare_command(&helper).await {
         Ok(contents) => contents,
         Err(e) => {
-            println!("Error preparing command: {}", e);
+            println!("Error preparing proposal command: {}", e);
             process::exit(1);
         }
     };
 
-    print!("Command: {}\n\n", command);
+    print!("Command: \n{}\n\n", command);
 }
 
 #[tokio::main]
 async fn main() {
     // if the first argument is "proposal", run the proposal command
     let args: Vec<String> = std::env::args().collect();
+    // TODO: add help command
+    // TODO: use some CLI package instead of this manual parsing
     if args.len() == 2 {
         match args[1].as_str() {
-            "proposal" => {
+            "generate-proposal" => {
                 // Create an instance of the helper
                 let upgrade_helper = get_helper_from_inputs().await;
 
@@ -100,7 +102,7 @@ async fn main() {
                 // Run the main functionality of the helper.
                 run_proposal_preparation(&upgrade_helper).await;
             }
-            "command" => {
+            "generate-command" => {
                 // Create an instance of the helper
                 let upgrade_helper = get_helper_from_inputs().await;
                 // Validate the helper configuration
@@ -110,11 +112,13 @@ async fn main() {
             }
             _ => {
                 println!(
-                    "Possible usage:\n  - upgrade-helper proposal\n  - upgrade-helper command\n"
+                    "Possible usage:\n  - upgrade-helper generate-proposal\n  - upgrade-helper generate-command\n"
                 )
             }
         }
     } else {
-        println!("Possible usage:\n  - upgrade-helper proposal\n  - upgrade-helper command\n")
+        println!(
+            "Possible usage:\n  - upgrade-helper generate-proposal\n  - upgrade-helper generate-command\n"
+        )
     }
 }
