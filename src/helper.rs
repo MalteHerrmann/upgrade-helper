@@ -4,9 +4,12 @@ use std::path::{Path, PathBuf};
 use std::{fs, process};
 
 /// Contains all relevant information for the scheduled upgrade.
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct UpgradeHelper {
     /// The chain ID of the node.
     pub chain_id: String,
+    /// The name of the config file.
+    pub config_file_name: String,
     /// The home directory of the node.
     pub home: PathBuf,
     /// The network to create the commands and proposal description for.
@@ -23,8 +26,8 @@ pub struct UpgradeHelper {
     pub upgrade_height: u64,
     /// The scheduled time of the upgrade.
     pub upgrade_time: DateTime<Utc>,
-    /// The voting period duration.
-    pub voting_period: Duration,
+    /// The number of hours for the voting period.
+    pub voting_period: i64,
 }
 
 impl UpgradeHelper {
@@ -44,9 +47,11 @@ impl UpgradeHelper {
         let upgrade_height = get_estimated_height(network, upgrade_time).await;
         println!("Estimated upgrade height: {}", upgrade_height);
         let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
+        let config_file_name = format!("proposal-{}-{}.json", network, target_version);
 
         UpgradeHelper {
             chain_id,
+            config_file_name,
             home,
             network,
             previous_version: previous_version.to_string(),
@@ -55,7 +60,7 @@ impl UpgradeHelper {
             target_version: target_version.to_string(),
             upgrade_height,
             upgrade_time,
-            voting_period,
+            voting_period: voting_period.num_hours(),
         }
     }
 
@@ -100,6 +105,85 @@ impl UpgradeHelper {
         }
 
         println!("Upgrade configuration is valid")
+    }
+
+    /// Exports the upgrade helper to a JSON file.
+    pub fn write_to_json(&self) -> bool {
+        // TODO: implement using serialize
+        let json = serde_json::to_string_pretty(&self).expect("Failed to convert to JSON");
+        let path = self.home.join(&self.config_file_name);
+
+        match fs::write(&path, json) {
+            Ok(_) => {
+                println!("Successfully wrote to file: {}", path.to_str().unwrap());
+            }
+            Err(e) => {
+                println!(
+                    "Failed to write to file '{}': {}",
+                    path.to_str().unwrap(),
+                    e
+                );
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Returns the upgrade helper from a JSON file.
+    pub fn from_json(path: &Path) -> UpgradeHelper {
+        // TODO: do this using deserialize
+        let json = fs::read_to_string(path).expect("Failed to read file");
+        let helper: UpgradeHelper = serde_json::from_str(&json).expect("Failed to parse JSON");
+        helper
+    }
+}
+
+#[cfg(test)]
+mod helper_tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    #[tokio::test]
+    async fn test_new_upgrade_helper() {
+        let network = Network::Testnet;
+        let previous_version = "v14.0.0";
+        let target_version = "v14.0.0-rc1";
+        let upgrade_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
+        let helper =
+            UpgradeHelper::new(network, previous_version, target_version, upgrade_time).await;
+        assert_eq!(helper.chain_id, "evmos_9000-4");
+        assert_eq!(helper.config_file_name, "proposal-Testnet-v14.0.0-rc1.json");
+        assert!(
+            helper.home.to_str().unwrap().contains(".evmosd"),
+            "expected different home directory"
+        );
+        assert_eq!(helper.network, Network::Testnet);
+        assert_eq!(helper.previous_version, "v14.0.0");
+        assert_eq!(helper.proposal_name, "Evmos Testnet v14.0.0-rc1 Upgrade");
+        assert_eq!(helper.proposal_file_name, "proposal-Testnet-v14.0.0-rc1.md");
+        assert_eq!(helper.target_version, "v14.0.0-rc1");
+    }
+
+    #[tokio::test]
+    async fn test_write_to_json() {
+        let helper = UpgradeHelper::new(
+            Network::Testnet,
+            "v14.0.0",
+            "v14.0.0-rc1",
+            Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap(),
+        )
+        .await;
+
+        assert!(
+            helper.write_to_json(),
+            "expected success writing helper information to JSON file"
+        )
+    }
+
+    #[tokio::test]
+    async fn test_read_from_json() {
+        assert!(false, "implement")
     }
 }
 

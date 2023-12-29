@@ -30,7 +30,7 @@ pub fn prepare_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
         "network": format!("{}", helper.network), // TODO: implement serialize trait here?
         "previous_version": get_release_md_link(helper.previous_version.as_str()),
         "version": get_release_md_link(helper.target_version.as_str()),
-        "voting_time": helper.voting_period.num_hours(),
+        "voting_time": helper.voting_period,
     });
 
     handlebars.render("proposal", &data)
