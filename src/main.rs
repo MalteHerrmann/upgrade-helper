@@ -13,46 +13,39 @@ use helper::UpgradeHelper;
 use std::process;
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
-async fn get_helper_from_inputs() -> UpgradeHelper {
+async fn get_helper_from_inputs() -> Result<UpgradeHelper, String> {
     // Query and check the network to use
-    let used_network = inputs::get_used_network();
+    let used_network = inputs::get_used_network()?;
 
     // Query and check the version to upgrade from
     let previous_version = inputs::get_text("Previous version to upgrade from:");
     let valid_version = version::is_valid_version(previous_version.as_str());
     if !valid_version {
-        println!("Invalid previous version: {}", previous_version);
-        process::exit(1);
+        return Err(format!("Invalid previous version: {}", previous_version));
     }
 
     // Query and check the target version to upgrade to
     let target_version = inputs::get_text("Target version to upgrade to:");
     let valid_version = version::is_valid_target_version(used_network, target_version.as_str());
     if !valid_version {
-        println!(
+        return Err(format!(
             "Invalid target version for {}: {}",
             used_network, target_version
-        );
-        process::exit(1);
+        ));
     }
 
     // Query the date and time for the upgrade
     let voting_period = helper::get_voting_period(used_network);
-    let upgrade_time = match inputs::get_upgrade_date(voting_period, Utc::now()) {
-        Some(time) => time,
-        None => {
-            process::exit(1);
-        }
-    };
+    let upgrade_time = inputs::get_upgrade_date(voting_period, Utc::now())?;
 
     // Create an instance of the helper
-    UpgradeHelper::new(
+    Ok(UpgradeHelper::new(
         used_network,
         previous_version.as_str(),
         target_version.as_str(),
         upgrade_time,
     )
-    .await
+    .await)
 }
 
 /// Runs the logic to prepare the proposal description and write
@@ -94,19 +87,70 @@ async fn main() {
         match args[1].as_str() {
             "generate-proposal" => {
                 // Create an instance of the helper
-                let upgrade_helper = get_helper_from_inputs().await;
+                let upgrade_helper = match get_helper_from_inputs().await {
+                    Ok(helper) => helper,
+                    Err(e) => {
+                        println!("Error creating helper: {}", e);
+                        process::exit(1);
+                    }
+                };
 
                 // Validate the helper configuration
-                upgrade_helper.validate();
+                match upgrade_helper.validate() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("Invalid configuration: {}", e);
+                        process::exit(1);
+                    }
+                };
+
+                // Export the configuration
+                match upgrade_helper.write_to_json() {
+                    Ok(_) => {
+                        println!(
+                            "successfully wrote config to json: {}",
+                            &upgrade_helper.config_file_name
+                        )
+                    }
+                    Err(e) => {
+                        println!(
+                            "failed to write config to {}: {}",
+                            &upgrade_helper.config_file_name, e
+                        );
+                    }
+                }
 
                 // Run the main functionality of the helper.
                 run_proposal_preparation(&upgrade_helper).await;
             }
             "generate-command" => {
-                // Create an instance of the helper
-                let upgrade_helper = get_helper_from_inputs().await;
+                // Choose configuration from all found configurations in folder
+                let config = match inputs::choose_config() {
+                    Ok(config) => config,
+                    Err(e) => {
+                        println!("Error choosing config: {}", e);
+                        process::exit(1);
+                    }
+                };
+
+                // Read the helper configuration
+                let upgrade_helper = match helper::from_json(config.as_path()) {
+                    Ok(helper) => helper,
+                    Err(e) => {
+                        println!("Error reading config: {}", e);
+                        process::exit(1);
+                    }
+                };
+
                 // Validate the helper configuration
-                upgrade_helper.validate();
+                match upgrade_helper.validate() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("Invalid configuration: {}", e);
+                        process::exit(1);
+                    }
+                };
+
                 // Run the main functionality of the helper.
                 run_command_preparation(&upgrade_helper).await;
             }

@@ -1,7 +1,7 @@
 use crate::{block::get_estimated_height, inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
-use std::{fs, process};
+use std::{fs, io};
 
 /// Contains all relevant information for the scheduled upgrade.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -32,6 +32,8 @@ pub struct UpgradeHelper {
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
+    ///
+    /// TODO: check errors instead of using expect everywhere
     pub async fn new(
         network: Network,
         previous_version: &str,
@@ -65,77 +67,76 @@ impl UpgradeHelper {
     }
 
     /// Validates the upgrade helper.
-    pub fn validate(&self) {
+    pub fn validate(&self) -> Result<(), String> {
         // Check if the target version is valid
         let valid_version =
             version::is_valid_target_version(self.network, self.target_version.as_str());
         if !valid_version {
-            println!(
+            return Err(format!(
                 "Invalid target version for {}: {}",
                 self.network, self.target_version
-            );
-            process::exit(1);
+            ));
         }
 
         // Check if the previous version is valid
         let valid_version = version::is_valid_version(self.previous_version.as_str());
         if !valid_version {
-            println!("Invalid previous version: {}", self.previous_version);
-            process::exit(1);
+            return Err(format!(
+                "Invalid previous version: {}",
+                self.previous_version
+            ));
         }
 
         // Check if the upgrade time is valid
         let valid_time = inputs::is_valid_upgrade_time(self.upgrade_time);
         if !valid_time {
-            println!("Invalid upgrade time: {}", self.upgrade_time);
-            process::exit(1);
+            return Err(format!("Invalid upgrade time: {}", self.upgrade_time));
         }
 
         // Check if home folder exists
         let exists = path_exists(&self.home);
         if !exists {
-            println!(
+            return Err(format!(
                 "Home folder does not exist: {}",
                 &self
                     .home
                     .to_str()
                     .expect("Failed to convert home path to string")
-            );
-            process::exit(1);
+            ));
         }
 
-        println!("Upgrade configuration is valid")
+        Ok(())
     }
 
     /// Exports the upgrade helper to a JSON file.
-    pub fn write_to_json(&self) -> bool {
-        // TODO: implement using serialize
+    pub fn write_to_json(&self) -> io::Result<()> {
         let json = serde_json::to_string_pretty(&self).expect("Failed to convert to JSON");
-        let path = self.home.join(&self.config_file_name);
+        let path = Path::new(&self.config_file_name);
 
-        match fs::write(&path, json) {
-            Ok(_) => {
-                println!("Successfully wrote to file: {}", path.to_str().unwrap());
-            }
-            Err(e) => {
-                println!(
-                    "Failed to write to file '{}': {}",
-                    path.to_str().unwrap(),
-                    e
-                );
-                return false;
-            }
-        }
-
-        true
+        fs::write(&path, json)
     }
+}
 
-    /// Returns the upgrade helper from a JSON file.
-    pub fn from_json(path: &Path) -> UpgradeHelper {
-        // TODO: do this using deserialize
-        let json = fs::read_to_string(path).expect("Failed to read file");
-        let helper: UpgradeHelper = serde_json::from_str(&json).expect("Failed to parse JSON");
-        helper
+/// Returns the upgrade helper from a JSON file.
+pub fn from_json(path: &Path) -> Result<UpgradeHelper, String> {
+    let json = match fs::read_to_string(path) {
+        Ok(contents) => contents,
+        Err(e) => {
+            return Err(format!(
+                "Failed to read contents of file '{}': {}",
+                path.to_str().unwrap(),
+                e
+            ));
+        }
+    };
+
+    match serde_json::from_str(&json) {
+        Ok(helper) => Ok(helper),
+        Err(e) => Err(format!(
+            "Failed to convert contents of file '{}' to JSON: {}",
+            path.to_str().unwrap(),
+            e
+        )),
     }
 }
 
@@ -166,7 +167,7 @@ mod helper_tests {
     }
 
     #[tokio::test]
-    async fn test_write_to_json() {
+    async fn test_write_to_json_and_read_from_json() {
         let helper = UpgradeHelper::new(
             Network::Testnet,
             "v14.0.0",
@@ -176,14 +177,26 @@ mod helper_tests {
         .await;
 
         assert!(
-            helper.write_to_json(),
+            helper.write_to_json().is_ok(),
             "expected success writing helper information to JSON file"
-        )
-    }
+        );
 
-    #[tokio::test]
-    async fn test_read_from_json() {
-        assert!(false, "implement")
+        // assert that the config file exists
+        let path = Path::new(&helper.config_file_name);
+        assert!(path_exists(path), "expected config file to exist");
+
+        let read_input_helper = from_json(path).expect("failed to read helper from JSON file");
+        assert_eq!(helper.chain_id, read_input_helper.chain_id);
+        assert_eq!(helper.config_file_name, read_input_helper.config_file_name);
+
+        // remove the config file
+        match fs::remove_file(&path) {
+            Ok(_) => {}
+            Err(e) => {
+                println!("Failed to remove file '{}': {}", path.to_str().unwrap(), e);
+                assert!(false, "expected success removing config file");
+            }
+        }
     }
 }
 
