@@ -1,39 +1,37 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
-use handlebars::{Handlebars, RenderError};
+use handlebars::Handlebars;
 use serde_json::json;
 use std::io;
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
-pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderError> {
+pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
     let description = match get_description_from_md(&helper.proposal_file_name) {
         Ok(d) => d,
         Err(e) => {
-            println!(
-                "failed to read proposal file '{}': {}\n\n!!! ATTENTION !!!\nMake sure to generate the file using the corresponding CLI command first.\n",
+            return Err(format!(
+                "Failed to read proposal file '{}': {}\n\n!!! ATTENTION !!!\nMake sure to generate the file using the corresponding CLI command first.\n",
                 &helper.proposal_file_name, e
-            );
-            return Err(RenderError::from(e));
+            ));
         }
     };
 
     let res = get_release(helper.target_version.as_str()).await;
     let release = match res {
         Ok(release) => release,
-        Err(_) => {
-            println!("Release {} does not exist yet.", helper.target_version);
-            return Err(RenderError::new("release does not exist yet"));
+        Err(e) => {
+            return Err(format!("Failed to get release from GitHub: {}", e));
         }
     };
 
     let assets = match get_asset_string(&release).await {
         Some(assets) => assets,
         None => {
-            return Err(RenderError::new(format!(
-                "could not generate asset string for release {}",
+            return Err(format!(
+                "Could not generate asset string for release {}",
                 helper.target_version,
-            )));
+            ));
         }
     };
 
@@ -55,9 +53,6 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         "version": helper.target_version,
     });
 
-    // TODO: print data JSON to file and then read as configuration
-    println!("{}", data);
-
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
 
@@ -65,7 +60,10 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, RenderErr
         .register_template_file("command", "src/templates/command.hbs")
         .expect("Failed to register template file");
 
-    handlebars.render("command", &data)
+    match handlebars.render("command", &data) {
+        Ok(command) => Ok(command),
+        Err(e) => Err(format!("Failed to render command: {}", e)),
+    }
 }
 
 /// Returns the description string from the given Markdown file.
@@ -152,9 +150,8 @@ mod tests {
     #[test]
     fn test_get_description_from_md() {
         let description = get_description_from_md("src/templates/command.hbs");
-        assert_eq!(
+        assert!(
             description.is_ok(),
-            true,
             "description should be ok, but is not"
         );
     }
@@ -162,9 +159,8 @@ mod tests {
     #[test]
     fn test_get_description_from_md_invalid_file() {
         let description = get_description_from_md("src/templates/command.hbs.invalid");
-        assert_eq!(
+        assert!(
             description.is_err(),
-            true,
             "description should be err, but is not"
         );
     }
