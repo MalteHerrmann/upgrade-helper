@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.31"
+chrono = { version="0.4.31", features=["serde"] }
 handlebars = "4.4.0"
 inquire = { version = "0.6.2", features = ["date"] }
 num-format = "0.4.4"
@@ -17,3 +17,6 @@ rstest = "0.18.2"
 serde_json = "1.0.107"
 tokio = { version = "1.33.0", features = ["full"] }
 url = "2.4.1"
+dirs = "5.0.1"
+serde = "1.0.193"
+serde_with = "3.4.0"
