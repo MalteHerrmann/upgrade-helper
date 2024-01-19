@@ -1,0 +1,12 @@
+evmosd tx gov submit-legacy-proposal software-upgrade {{version}} \
+--title "{{title}}" \
+--upgrade-height {{height}} \
+--description "{{description}}" \
+--from {{key}} \
+--fees {{fees}} \
+--gas auto \
+--chain-id {{chain_id}} \
+--home {{home}} \
+--node {{tm_rpc}} \
+--upgrade-info '{{assets}}' \
+-b sync

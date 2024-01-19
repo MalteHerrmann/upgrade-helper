@@ -3,15 +3,56 @@ use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
 };
 use inquire::{DateSelect, Select};
-use std::{ops::Add, process};
+use std::path::PathBuf;
+use std::{fs, ops::Add, process};
 
 const MONTHS: [&str; 13] = [
     "", "January", "February", "March", "April", "May", "June", "July", "August", "Septemer",
     "October", "November", "December",
 ];
 
+/// Scans the current folder for existing proposal configurations (stored as JSON)
+/// and lets the user choose the desired configuration file to use.
+pub fn choose_config() -> Result<PathBuf, String> {
+    let current_dir = std::env::current_dir().unwrap();
+
+    // Get all files in the current directory
+    let paths = fs::read_dir(&current_dir).unwrap();
+
+    // Filter for JSON files
+    let json_files = paths.filter(|path| {
+        path.as_ref()
+            .unwrap()
+            .path()
+            .to_str()
+            .unwrap()
+            .ends_with(".json")
+    });
+
+    // Collect the file names
+    let mut config_files: Vec<String> = Vec::new();
+    for file in json_files {
+        let file_name = file.unwrap().path().to_str().unwrap().to_string();
+        config_files.push(file_name);
+    }
+
+    if config_files.is_empty() {
+        return Err("No configuration files found in current directory".to_string());
+    }
+
+    // Prompt the user to select the configuration file
+    let config_file_name = match Select::new("Select configuration file", config_files).prompt() {
+        Ok(choice) => choice,
+        Err(e) => {
+            return Err(format!("Error selecting configuration file: {}", e));
+        }
+    };
+
+    Ok(current_dir.join(config_file_name))
+}
+
 /// Prompts the user to select the network type used.
-pub fn get_used_network() -> Network {
+pub fn get_used_network() -> Result<Network, String> {
     let used_network: Network;
 
     let network_options = vec!["Local Node", "Testnet", "Mainnet"];
@@ -20,24 +61,20 @@ pub fn get_used_network() -> Network {
     let chosen_network = Select::new("Select network", network_options).prompt();
 
     match chosen_network {
-        Ok(choice) => {
-            match choice {
-                "Local Node" => used_network = Network::LocalNode,
-                "Testnet" => used_network = Network::Testnet,
-                "Mainnet" => used_network = Network::Mainnet,
-                &_ => {
-                    println!("Invalid network selected: {:?}", choice);
-                    process::exit(1); // TODO: return error here instead of exiting in here
-                }
+        Ok(choice) => match choice {
+            "Local Node" => used_network = Network::LocalNode,
+            "Testnet" => used_network = Network::Testnet,
+            "Mainnet" => used_network = Network::Mainnet,
+            &_ => {
+                return Err(format!("Invalid network selected: {:?}", choice));
             }
-        }
+        },
         Err(e) => {
-            println!("Error selecting network: {}", e);
-            process::exit(1);
+            return Err(format!("Error selecting network: {}", e.to_string()));
         }
     }
 
-    used_network
+    Ok(used_network)
 }
 
 /// Prompts the user to input the target version to upgrade to.
@@ -60,7 +97,10 @@ pub fn get_text(prompt: &str) -> String {
 
 /// Prompts the user to input the date for the planned upgrade.
 /// The date is calculated based on the current time and the voting period duration.
-pub fn get_upgrade_date(voting_period: Duration, utc_time: DateTime<Utc>) -> Option<DateTime<Utc>> {
+pub fn get_upgrade_date(
+    voting_period: Duration,
+    utc_time: DateTime<Utc>,
+) -> Result<DateTime<Utc>, String> {
     let default_date = calculate_planned_date(voting_period, utc_time);
 
     // Prompt the user to input the desired upgrade date
@@ -73,12 +113,9 @@ pub fn get_upgrade_date(voting_period: Duration, utc_time: DateTime<Utc>) -> Opt
         Ok(date) => {
             let time = NaiveTime::from_hms_opt(16, 0, 0).unwrap();
             let planned_naive_date_time = NaiveDateTime::new(date, time);
-            Some(Utc.from_local_datetime(&planned_naive_date_time).unwrap())
+            Ok(Utc.from_local_datetime(&planned_naive_date_time).unwrap())
         }
-        Err(e) => {
-            println!("Error selecting planned date: {}", e);
-            return None;
-        }
+        Err(e) => Err(format!("Error selecting planned date: {}", e.to_string())),
     }
 }
 
