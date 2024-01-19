@@ -46,8 +46,8 @@ impl UpgradeHelper {
 
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
+        // TODO: Move out to input and pass values into function, helper should be instantiated with all values
         let upgrade_height = get_estimated_height(network, upgrade_time).await;
-        println!("Estimated upgrade height: {}", upgrade_height);
         let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
         let config_file_name = format!("proposal-{}-{}.json", network, target_version);
 

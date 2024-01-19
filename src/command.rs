@@ -1,7 +1,7 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
-use handlebars::Handlebars;
+use handlebars::{Handlebars, no_escape};
 use serde_json::json;
 use std::io;
 
@@ -55,6 +55,7 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
 
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
+    handlebars.register_escape_fn(no_escape);
 
     handlebars
         .register_template_file("command", "src/templates/command.hbs")
@@ -117,7 +118,8 @@ mod tests {
                     .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
                 expected_command.push_str("--description \"This is a test proposal.\" \\\n");
                 expected_command.push_str("--from testnet-address \\\n");
-                expected_command.push_str("--fees 10000000aevmos \\\n");
+                expected_command.push_str("--fees 10000000000aevmos \\\n");
+                expected_command.push_str("--gas auto \\\n");
                 expected_command.push_str("--chain-id evmos_9000-4 \\\n");
                 expected_command.push_str(
                     format!(
@@ -131,7 +133,7 @@ mod tests {
                     .as_str(),
                 );
                 expected_command.push_str("--node https://tm.evmos-testnet.lava.build:26657 \\\n");
-                expected_command.push_str("--upgrade-info \\\n");
+                expected_command.push_str(concat!(r#"--upgrade-info '{"binaries":{"darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178","darwin/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_arm64.tar.gz?checksum=541d4bac1513c84278c8d6b39c86aca109cc1ecc17652df56e57488ffbafd2d5","linux/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_amd64.tar.gz?checksum=427c2c4a37f3e8cf6833388240fcda152a5372d4c5132ca2e3861a7085d35cd0","linux/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_arm64.tar.gz?checksum=a84279d66b6b0ecd87b85243529d88598995eeb124bc16bb8190a7bf022825fb"}}'"#, " \\\n"));
                 expected_command.push_str("-b sync");
                 assert_eq!(
                     command, expected_command,
