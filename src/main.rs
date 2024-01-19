@@ -75,6 +75,9 @@ async fn run_command_preparation(helper: &UpgradeHelper) {
     };
 
     print!("Command: \n{}\n\n", command);
+    // FIXME: command contains actual new lines instead of \n
+    proposal::write_proposal_to_file(&command, &helper.proposal_file_name.replace(".md", ".sh"))
+        .expect("failed to write command to file");
 }
 
 #[tokio::main]
